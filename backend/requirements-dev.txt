@@ -1,0 +1,6 @@
+-r requirements.txt
+
+pytest==9.1.1
+# Starlette 1.6's TestClient uses httpx2; plain httpx raises a deprecation warning.
+httpx2==2.12.0
+ruff==0.16.5

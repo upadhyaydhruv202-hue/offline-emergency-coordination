@@ -1,0 +1,50 @@
+name: drp_mobile
+description: Offline-first field application for the Disaster Response Platform.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management.
+  flutter_riverpod: ^3.4.2
+
+  # Declarative navigation.
+  go_router: ^18.0.0
+
+  # Local-first datastore. drift_flutter supplies the bundled SQLite binaries
+  # and the platform-appropriate database directory.
+  drift: ^2.34.3
+  drift_flutter: ^0.3.1
+
+  # Transport awareness (network interfaces only; no mesh in Slice 1).
+  connectivity_plus: ^7.3.1
+
+  # Keystore / Keychain backed token storage.
+  flutter_secure_storage: ^11.0.0
+
+  # Calls to the coordination backend when a link exists.
+  http: ^1.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  # Drift code generation.
+  build_runner: ^2.16.0
+  drift_dev: ^2.34.5
+
+  # Lets unit tests open an in-memory SQLite database outside the Flutter engine.
+  sqlite3: ^3.5.2
+
+  mocktail: ^1.0.5
+
+flutter:
+  uses-material-design: true

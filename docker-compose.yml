@@ -1,0 +1,55 @@
+name: disaster-response-platform
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: drp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-drp}
+      POSTGRES_USER: ${POSTGRES_USER:-drp_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      # Reject unauthenticated connections even on the container network.
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      # Executed once, in filename order, on an empty data directory.
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-drp_app} -d ${POSTGRES_DB:-drp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: drp-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-drp_app}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-drp}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      SEED_PASSWORD: ${SEED_PASSWORD:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  db_data:
+    name: drp_db_data

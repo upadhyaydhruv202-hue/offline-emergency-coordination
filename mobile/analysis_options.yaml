@@ -1,0 +1,25 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  # Generated Drift code is deliberately *not* excluded: it carries its own
+  # `ignore_for_file: type=lint` header, so it contributes no lint noise while
+  # still being compiled and error-checked by `flutter analyze`.
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - windows/**
+  language:
+    strict-casts: true
+    strict-raw-types: true
+
+linter:
+  # flutter_lints already covers the const-preference and widget-key rules.
+  # These add the ones that catch real defects rather than formatting.
+  rules:
+    - always_declare_return_types
+    - avoid_print
+    - prefer_single_quotes
+    - sort_child_properties_last
+    - unawaited_futures
+    - use_super_parameters
