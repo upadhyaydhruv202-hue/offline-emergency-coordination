@@ -37,6 +37,19 @@ class AppMetadataDao {
     return created;
   }
 
+  /// Increments a device-local counter and returns the new value.
+  ///
+  /// Runs in a transaction so two registrations started in quick succession
+  /// cannot be handed the same number. The counter is per device by
+  /// construction, which is what keeps a victim's short id unique without any
+  /// coordination with the backend.
+  Future<int> nextSequence(String key) => _db.transaction(() async {
+        final current = int.tryParse(await read(key) ?? '') ?? 0;
+        final next = current + 1;
+        await write(key, next.toString());
+        return next;
+      });
+
   Future<int> count() async {
     final query = _db.selectOnly(_db.appMetadata)
       ..addColumns([_db.appMetadata.key.count()]);

@@ -6,5 +6,6 @@ before migrations are generated.
 
 from app.models.base import Base
 from app.models.user import User  # noqa: F401  (registers the table)
+from app.models.victim import Victim  # noqa: F401  (registers the table)
 
 __all__ = ["Base"]

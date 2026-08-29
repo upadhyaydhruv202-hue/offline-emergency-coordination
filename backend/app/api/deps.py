@@ -14,6 +14,7 @@ from app.db.session import get_session
 from app.models.enums import UserRole
 from app.models.user import User
 from app.services.auth_service import AuthService
+from app.services.victim_service import VictimService
 
 bearer_scheme = HTTPBearer(auto_error=False, description="JWT access token")
 
@@ -25,6 +26,13 @@ def get_auth_service(session: DbSession) -> AuthService:
 
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+
+
+def get_victim_service(session: DbSession) -> VictimService:
+    return VictimService(session)
+
+
+VictimServiceDep = Annotated[VictimService, Depends(get_victim_service)]
 
 
 def get_current_user(

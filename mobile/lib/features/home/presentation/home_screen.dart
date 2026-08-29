@@ -7,6 +7,8 @@ import '../../../app/theme/app_colors.dart';
 import '../../../data/local/database_providers.dart';
 import '../../../data/local/local_database_health.dart';
 import '../../../domain/entities/demo_data.dart';
+import '../../../domain/entities/triage_category.dart';
+import '../../../domain/entities/victim_board.dart';
 import '../../../shared/widgets/demo_data_banner.dart';
 import '../../../shared/widgets/operational_panel.dart';
 import '../../../shared/widgets/status_chip.dart';
@@ -14,6 +16,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../auth/application/auth_state.dart';
 import '../../connectivity/connectivity_providers.dart';
 import '../../connectivity/connectivity_status.dart';
+import '../../victims/application/victim_providers.dart';
 
 /// The responder's operational summary: who they are, what they are assigned
 /// to, and whether the device can be relied on.
@@ -117,12 +120,16 @@ class HomeScreen extends ConsumerWidget {
               accent: AppColors.critical,
             ),
           ),
+          const SizedBox(height: 10),
+
+          _VictimsPanel(board: ref.watch(victimBoardProvider).value),
 
           const SizedBox(height: 20),
           const DemoDataBanner(
             message:
-                'the incident above is fabricated. Incident, victim, SOS and '
-                'hazard modules are not implemented in this slice.',
+                'the incident above is fabricated. The incident, SOS and '
+                'hazard modules are not implemented in this slice. Victim '
+                'records are real and were authored on this device.',
           ),
 
           const SizedBox(height: 20),
@@ -161,6 +168,32 @@ class _ConnectivityPanel extends StatelessWidget {
       value: status?.label ?? 'CHECKING',
       detail: detail,
       accent: color,
+    );
+  }
+}
+
+class _VictimsPanel extends StatelessWidget {
+  const _VictimsPanel({required this.board});
+
+  final VictimBoard? board;
+
+  @override
+  Widget build(BuildContext context) {
+    final counts = board ?? VictimBoard.empty;
+    final critical = counts.countOf(TriageCategory.critical);
+
+    return OperationalPanel(
+      label: 'Victims',
+      value: '${counts.total} registered',
+      detail: counts.total == 0
+          ? 'Nothing recorded on this device yet.'
+          : '$critical critical · ${counts.open} still open · '
+              '${counts.pendingSync} awaiting synchronisation',
+      accent: critical > 0 ? AppColors.critical : AppColors.accent,
+      trailing: TextButton(
+        onPressed: () => context.go(AppRoute.victims.path),
+        child: const Text('Open'),
+      ),
     );
   }
 }

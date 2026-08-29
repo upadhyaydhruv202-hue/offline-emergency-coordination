@@ -24,7 +24,7 @@ describe("authenticated routing", () => {
     expect(await screen.findByRole("note")).toHaveTextContent(/demo data/i);
   });
 
-  it("shows all five operational metrics", async () => {
+  it("shows every operational metric", async () => {
     seedStoredSession();
     stubSignedInApi();
 
@@ -32,9 +32,10 @@ describe("authenticated routing", () => {
     await screen.findByRole("heading", { name: /operational overview/i });
 
     for (const label of [
+      /registered victims/i,
+      /critical victims/i,
       /active incidents/i,
       /active responders/i,
-      /critical victims/i,
       /active hazards/i,
       /pending synchronisation/i,
     ]) {
@@ -42,13 +43,31 @@ describe("authenticated routing", () => {
     }
   });
 
+  it("reports victim counts from the backend rather than a fixed figure", async () => {
+    seedStoredSession();
+    stubSignedInApi(() => ({
+      items: [],
+      board: {
+        total: 12,
+        open_cases: 9,
+        evacuated: 3,
+        by_triage: { critical: 4, urgent: 3, moderate: 2, stable: 3 },
+      },
+      total: 12,
+    }));
+
+    renderRoute("/dashboard");
+
+    const caption = await screen.findByText("9 open · 3 evacuated");
+    expect(caption.closest("article")).toHaveTextContent("12");
+  });
+
   it.each([
-    ["/incidents", /incidents/i, /slice 2/i],
-    ["/responders", /responders/i, /slice 2/i],
-    ["/victims", /victims/i, /slice 2/i],
+    ["/incidents", /incidents/i, /slice 3/i],
+    ["/responders", /responders/i, /slice 3/i],
     ["/map", /operational map/i, /slice 3/i],
     ["/resources", /resources/i, /slice 4/i],
-    ["/settings", /settings/i, /slice 2/i],
+    ["/settings", /settings/i, /slice 4/i],
   ])("renders %s as an explicit placeholder", async (path, heading, slice) => {
     seedStoredSession();
     stubSignedInApi();

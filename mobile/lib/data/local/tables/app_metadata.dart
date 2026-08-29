@@ -22,4 +22,7 @@ class AppMetadataKeys {
   static const String deviceId = 'device.id';
   static const String schemaInitialisedAt = 'schema.initialised_at';
   static const String lastSyncAt = 'sync.last_completed_at';
+
+  /// Counter behind the short victim identifier printed on a triage tag.
+  static const String victimSequence = 'victim.sequence';
 }

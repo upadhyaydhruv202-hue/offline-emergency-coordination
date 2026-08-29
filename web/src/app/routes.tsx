@@ -9,8 +9,8 @@ import {
   ResourcesPage,
   RespondersPage,
   SettingsPage,
-  VictimsPage,
 } from "../features/placeholders/pages";
+import { VictimsPage } from "../features/victims/VictimsPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 
 /** Exported separately from the router so tests can mount them in memory. */

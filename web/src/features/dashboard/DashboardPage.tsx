@@ -3,11 +3,13 @@ import { DemoDataNotice } from "../../components/ui/DemoDataNotice";
 import { StatusPill } from "../../components/ui/StatusPill";
 import { ROLE_LABELS } from "../../lib/api/auth";
 import { useAuth } from "../auth/useAuth";
-import { MetricTile } from "./MetricTile";
+import { useVictimBoard } from "../victims/useVictims";
+import { MetricTile, Tile } from "./MetricTile";
 import { CAPABILITY_LEDGER, OPERATIONAL_METRICS } from "./operationalSnapshot";
 
 export function DashboardPage() {
   const { user } = useAuth();
+  const board = useVictimBoard();
 
   return (
     <div className="mx-auto max-w-7xl space-y-5">
@@ -18,12 +20,27 @@ export function DashboardPage() {
             Signed in as {user?.full_name} · {user ? ROLE_LABELS[user.role] : ""}
           </p>
         </div>
-        <StatusPill tone="info">Slice 1 — foundation</StatusPill>
+        <StatusPill tone="info">Slice 2 — victims and triage</StatusPill>
       </div>
 
-      <DemoDataNotice />
+      <DemoDataNotice>
+        incident, responder and synchronisation figures are hard-coded. Victim counts are live from
+        the coordination backend.
+      </DemoDataNotice>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <Tile
+          label="Registered victims"
+          value={board?.total ?? "—"}
+          caption={board ? `${board.open_cases} open · ${board.evacuated} evacuated` : "No uplink"}
+          tone="info"
+        />
+        <Tile
+          label="Critical victims"
+          value={board?.by_triage.critical ?? "—"}
+          caption="Immediate, life threatening"
+          tone="critical"
+        />
         {OPERATIONAL_METRICS.map((metric) => (
           <MetricTile key={metric.key} metric={metric} />
         ))}

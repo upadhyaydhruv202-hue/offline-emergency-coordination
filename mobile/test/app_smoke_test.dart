@@ -52,6 +52,16 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Tears the tree down inside the test body.
+  ///
+  /// The home screen watches a Drift query stream, and cancelling one schedules
+  /// a zero-duration cleanup timer. Disposing here and then elapsing lets that
+  /// timer run before the binding checks for pending timers.
+  Future<void> closeApp(WidgetTester tester) async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(Duration.zero);
+  }
+
   Future<void> enterOfflineDemo(WidgetTester tester, String roleLabel) async {
     await tester.tap(find.text('Continue in Offline Demo Mode'));
     await tester.pumpAndSettle();
@@ -68,6 +78,8 @@ void main() {
     expect(find.text('Field sign-in'), findsOneWidget);
     expect(find.text('Login'), findsOneWidget);
     expect(find.text('Continue in Offline Demo Mode'), findsOneWidget);
+
+    await closeApp(tester);
   });
 
   testWidgets('offline demo mode reaches the responder home screen', (
@@ -79,6 +91,8 @@ void main() {
 
     expect(find.text('Offline Demo Responder'), findsOneWidget);
     expect(find.text('DEMO SESSION'), findsOneWidget);
+
+    await closeApp(tester);
   });
 
   testWidgets('home shows incident, role, connectivity and database status', (
@@ -100,6 +114,8 @@ void main() {
 
     expect(find.text('LOCAL DATABASE'), findsOneWidget);
     expect(find.text('READY'), findsOneWidget);
+
+    await closeApp(tester);
   });
 
   testWidgets('an unreachable backend renders DEGRADED, not a failure', (
@@ -112,6 +128,8 @@ void main() {
     expect(find.text('DEGRADED'), findsWidgets);
     // The local datastore is unaffected by the backend being unreachable.
     expect(find.text('READY'), findsOneWidget);
+
+    await closeApp(tester);
   });
 
   testWidgets('with no link at all the device still reaches home', (
@@ -124,6 +142,8 @@ void main() {
     expect(find.text('OFFLINE'), findsWidgets);
     expect(find.text('READY'), findsOneWidget);
     expect(find.text('Incident Commander'), findsWidgets);
+
+    await closeApp(tester);
   });
 
   testWidgets('an unbuilt module names the slice that will deliver it', (
@@ -132,14 +152,16 @@ void main() {
     await bootApp(tester);
     await enterOfflineDemo(tester, 'Rescue Team');
 
-    await tester.tap(find.byIcon(Icons.people_alt_outlined));
+    await tester.tap(find.byIcon(Icons.emergency_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.text('COMING IN SLICE 2'), findsOneWidget);
+    expect(find.text('COMING IN SLICE 3'), findsOneWidget);
     expect(
       find.textContaining('Coming in the next development slice'),
       findsOneWidget,
     );
+
+    await closeApp(tester);
   });
 
   testWidgets('the session survives a restart of the widget tree', (
@@ -149,10 +171,14 @@ void main() {
     await enterOfflineDemo(tester, 'Rescue Team');
     expect(find.text('Offline Demo Responder'), findsOneWidget);
 
-    // A fresh ProviderScope over the same database stands in for a cold start.
+    // Tearing the tree down and building it again over the same database is a
+    // cold start: nothing is carried over in memory.
+    await closeApp(tester);
     await bootApp(tester);
 
     expect(find.text('Field sign-in'), findsNothing);
     expect(find.text('Offline Demo Responder'), findsOneWidget);
+
+    await closeApp(tester);
   });
 }

@@ -1,6 +1,6 @@
 # Offline-First Disaster Response & Emergency Coordination Platform
 
-**SIH 2026 prototype — Slice 1: Foundation**
+**SIH 2026 prototype — Slice 2: Offline victim registration and digital triage**
 
 > **Field devices must remain operational even when disconnected from the internet.**
 
@@ -33,20 +33,41 @@ and never
 Mobile → Backend → Database
 ```
 
-A responder registers a casualty, records a triage category and marks a hazard
-against local storage. The record is complete and authoritative the moment it is
-written. Synchronisation, when a link appears, reconciles peers — it is never a
+A responder registers a casualty and records a triage category against local
+storage. The record is complete and authoritative the moment it is written.
+Synchronisation, when a link appears, reconciles peers — it is never a
 precondition for doing the work.
+
+This is now demonstrable rather than aspirational. Put the device in aeroplane
+mode, register ten casualties, triage them, kill the app, reopen it: everything
+is there, ordered critical-first, marked `SYNC PENDING`. Nothing in that path
+touches the backend.
 
 The backend is a coordination **peer**: it holds the shared operational picture
 and serves the command centre. It is not in the critical path of a responder in
 the field.
 
+## The field application
+
+| Victim roster | Register | Record |
+| --- | --- | --- |
+| ![Victim roster](docs/screenshots/mobile-victims.png) | ![Register a casualty](docs/screenshots/mobile-register.png) | ![Casualty record](docs/screenshots/mobile-victim-detail.png) |
+
+Captured on a device with no network interface. The roster is sorted
+critical-first and headed by a live triage board; the registration form leads
+with the triage decision because that is the one field that must not be skipped;
+the record carries both the field id read aloud over radio (`V-CBEC-004`) and
+the UUID that will survive reconciliation.
+
 ## The command centre
 
 ![Command centre dashboard](docs/screenshots/web-dashboard.png)
 
-Every figure on the dashboard is hard-coded and labelled as such — see
+![Casualty roster](docs/screenshots/web-victims.png)
+
+The Victims page and the two victim tiles on the dashboard are read from the
+backend and marked `LIVE`. Incident, responder, hazard and synchronisation
+figures are still hard-coded and carry the slice that will replace them — see
 [`docs/screenshots/`](docs/screenshots) for the sign-in and placeholder pages.
 
 ## Architecture
@@ -54,9 +75,9 @@ Every figure on the dashboard is hard-coded and labelled as such — see
 ```
 FIELD DEVICE
     ↓
-LOCAL DATABASE            ← implemented
+LOCAL DATABASE            ← implemented (Slice 1)
     ↓
-LOCAL OPERATIONAL STATE   ← implemented
+LOCAL OPERATIONAL STATE   ← implemented (Slice 2: victims and triage)
     ↓
 PEER SYNCHRONISATION
     ↓
@@ -71,8 +92,8 @@ DECISION SUPPORT
 COORDINATED RESPONSE
 ```
 
-Slice 1 builds the first two stages and the structure the rest attach to. Full
-detail in [`docs/architecture.md`](docs/architecture.md).
+The first two stages are built; the structure the rest attach to is in place.
+Full detail in [`docs/architecture.md`](docs/architecture.md).
 
 ## Technology
 
@@ -175,6 +196,13 @@ DATABASE_URL=sqlite+pysqlite:///./drp_dev.sqlite3
 `@drp.example`. The password comes from `SEED_PASSWORD`; leave it blank and a
 strong one is generated and printed once. No credential is ever committed.
 
+`python -m app.db.seed --victims` additionally inserts five demo casualties so
+the command centre's Victims page has something to show. They are tagged
+`V-SEED-*` and attributed to `seed`, so they can never be mistaken for records
+a responder actually registered. It is opt-in because the mobile app does not
+upload yet: without it the page is legitimately empty, and that emptiness is
+the honest state of the system.
+
 ### 4. Web command centre
 
 ```bash
@@ -264,9 +292,9 @@ Configuration is compile-time, via `--dart-define`:
 ## Tests
 
 ```bash
-cd backend && pytest        # 36 tests
-cd web     && npm test      # 24 tests
-cd mobile  && flutter test  # 45 tests
+cd backend && pytest        # 60 tests
+cd web     && npm test      # 34 tests
+cd mobile  && flutter test  # 79 tests
 ```
 
 | Suite | Tests | Covers |
@@ -275,22 +303,37 @@ cd mobile  && flutter test  # 45 tests
 | `backend/tests/test_auth.py` | 20 | Login, refresh, `/me`, token typing, hashing, validation |
 | `backend/tests/test_roles.py` | 4 | The five roles and `require_roles` |
 | `backend/tests/test_config.py` | 9 | Secret-key and CORS configuration guards |
+| `backend/tests/test_victims.py` | 24 | Upload, idempotent retry, reassessment, ordering, counts, filters |
 | `web/src/app/routing.test.tsx` | 10 | Startup, protected-route redirects |
-| `web/src/app/authenticatedRoutes.test.tsx` | 11 | Session restore, dashboard, placeholders, sign-out |
+| `web/src/app/authenticatedRoutes.test.tsx` | 11 | Session restore, dashboard, live victim counts, placeholders, sign-out |
 | `web/src/features/auth/LoginPage.test.tsx` | 3 | Credential success, rejection, unreachable backend |
+| `web/src/features/victims/VictimsPage.test.tsx` | 10 | Triage counts, roster, ordering, filters, unreachable backend |
 | `mobile/test/app_smoke_test.dart` | 7 | Boots the real app: splash, login, offline demo, home, placeholders, restart |
 | `mobile/test/local_database_test.dart` | 11 | Drift init, schema, session persistence |
 | `mobile/test/connectivity_test.dart` | 15 | `ONLINE`/`DEGRADED`/`OFFLINE` resolution |
 | `mobile/test/auth_flow_test.dart` | 12 | Offline demo, sign-in, role model, redirect policy |
+| `mobile/test/victim_store_test.dart` | 26 | Schema v2, registration, persistence, reassessment, ordering, filters, counts |
+| `mobile/test/victim_offline_flow_test.dart` | 8 | The whole offline journey through the real app widget |
 
 The backend suite runs against a temporary SQLite file, and the mobile suite
 against an in-memory SQLite database, so neither needs Docker or PostgreSQL.
 
-`mobile/test/app_smoke_test.dart` pumps the real `DisasterResponseApp` widget
-and overrides only what needs a physical device — the database location and the
-platform connectivity channel. It is the repeatable form of "the app launches".
+`mobile/test/app_smoke_test.dart` and `victim_offline_flow_test.dart` pump the
+real `DisasterResponseApp` widget and override only what needs a physical
+device — the database location and the platform connectivity channel. The
+victim flow test additionally forces *no transport at all* and a backend probe
+that always fails, so if any step of registering, listing, reassessing or
+reopening a casualty needed the backend, none of those eight tests would pass.
 
-## Implemented in Slice 1
+The acceptance run in the Slice 2 brief is `victim_offline_flow_test.dart`
+verbatim: boot offline, open Victims, register, tear the app down, boot it
+again over the same database, confirm the record is still there, change the
+triage category, restart again, confirm the change survived — for all four
+categories.
+
+## Implemented
+
+### Slice 1 — Foundation
 
 **Backend** — layered FastAPI service; `/health` and `/health/ready`;
 `/auth/login`, `/auth/refresh`, `/auth/me`; `users` table and five-role enum;
@@ -299,9 +342,8 @@ CORS; request validation; uniform error envelope; Alembic migration;
 environment-driven seeding.
 
 **Web** — command-centre shell with sidebar and top bar; login; protected routes
-and session restore; dashboard with active incidents, active responders,
-critical victims, active hazards and pending synchronisation (all labelled as
-demo data); placeholder pages for the remaining modules.
+and session restore; dashboard metrics labelled as demo data; placeholder pages
+for the unbuilt modules.
 
 **Mobile** — splash with real session restoration; login and offline demo mode;
 role display and selection; responder home showing incident, role, connectivity
@@ -311,15 +353,41 @@ service; GoRouter across all eleven destinations.
 **Infrastructure** — Docker Compose with PostgreSQL 16 + PostGIS 3.4, a
 persistent volume, health checks, and first-boot extension provisioning.
 
+### Slice 2 — Offline victim registration and digital triage
+
+**Mobile** — victim list, register, detail and edit/reassess screens; four
+triage categories and five statuses; device-minted UUIDs and radio-readable
+temporary ids; search, triage and status filters, critical-first ordering;
+`OFFLINE` / `LOCAL DATA` / `SYNC PENDING` on every victim surface; Drift schema
+v2 with the `victims` table and its migration. **No step of this calls the
+backend.**
+
+**Backend** — `victims` table and four new enums; migration `0002_victims`;
+list, board, read, upload and patch endpoints; idempotent upload so a device
+retrying an unconfirmed send cannot duplicate a casualty.
+
+**Web** — Victims page with counts for every triage category and the casualty
+roster; search and filter; live victim counts on the dashboard.
+
 ## Deliberately not implemented
 
-Victim registration, triage, SOS, GPS tracking, hazard detection, CRDT
-synchronisation, mesh networking, the Digital Twin, AI, routing, hospital and
-resource management, and advanced security (ZKP, DID, WebAuthn, blockchain,
-device trust).
+SOS, GPS tracking, hazard detection, incident scoping, CRDT synchronisation,
+mesh networking, the Digital Twin, AI, routing, hospital and resource
+management, and advanced security (ZKP, DID, WebAuthn, blockchain, device
+trust).
 
 None of it is stubbed or simulated. Every unbuilt module renders a page naming
 the slice that will deliver it. See [`docs/slices.md`](docs/slices.md).
+
+Two things are worth being explicit about, because their absence is a design
+decision rather than an omission:
+
+- **Victim records do not leave the device.** The upload endpoint exists and is
+  tested, but the mobile app never calls it. Giving records a way to travel is
+  Slice 4's job, and building half of it now would mean building it twice.
+- **Triage history is not kept.** Reassessment overwrites the category and bumps
+  `updated_at`. An append-only clinical record is worth having once there is a
+  synchronisation layer to merge two devices' versions of it.
 
 ## Known limitations
 
@@ -331,8 +399,13 @@ the slice that will deliver it. See [`docs/slices.md`](docs/slices.md).
   on a cold cache. Subsequent runs are much faster.
 - **Development JWT keys are ephemeral.** With `JWT_SECRET_KEY` blank, restarting
   the backend invalidates every issued token. Set one to avoid this.
-- **The dashboard is fabricated.** Every figure is hard-coded in
+- **Most of the dashboard is still fabricated.** Victim counts are live; the
+  incident, responder, hazard and synchronisation figures are hard-coded in
   `web/src/features/dashboard/operationalSnapshot.ts` and labelled in the UI.
+- **The command centre only sees uploaded victims.** Since the mobile app does
+  not upload yet, the Victims page is empty until something posts to
+  `POST /api/v1/victims` — `python -m app.db.seed --victims` will. That is the
+  honest state of the system until Slice 4.
 - **The mobile incident is fabricated.** Single constant in
   `mobile/lib/domain/entities/demo_data.dart`, labelled in the UI.
 - **Vitest uses the `threads` pool.** The default `forks` pool fails to start

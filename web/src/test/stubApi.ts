@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 import type { AuthenticatedUser, LoginResponse } from "../lib/api/auth";
+import type { Victim, VictimBoard, VictimPage } from "../lib/api/victims";
 
 export const TEST_USER: AuthenticatedUser = {
   id: "11111111-2222-3333-4444-555555555555",
@@ -35,10 +36,56 @@ export function stubApi(handler: Handler) {
   return fetchMock;
 }
 
-export function stubSignedInApi() {
+export function makeVictim(overrides: Partial<Victim> = {}): Victim {
+  return {
+    id: "aaaaaaaa-0000-0000-0000-000000000001",
+    temporary_id: "V-8C1F-001",
+    name: "A. Sharma",
+    age: 41,
+    age_group: "ADULT",
+    gender: "FEMALE",
+    medical_condition: null,
+    injury_type: "Crush injury to left leg",
+    triage_category: "CRITICAL",
+    priority: 0,
+    assistance_required: null,
+    status: "REGISTERED",
+    latitude: null,
+    longitude: null,
+    created_by: "local-session-1",
+    created_at: "2026-08-29T08:00:00Z",
+    updated_at: "2026-08-29T08:05:00Z",
+    ...overrides,
+  };
+}
+
+export function makeBoard(overrides: Partial<VictimBoard> = {}): VictimBoard {
+  return {
+    total: 0,
+    open_cases: 0,
+    evacuated: 0,
+    by_triage: { critical: 0, urgent: 0, moderate: 0, stable: 0 },
+    ...overrides,
+  };
+}
+
+/**
+ * Routes the auth and victim endpoints.
+ *
+ * `victims` is a function of the request path so a test can assert on the
+ * query string the page actually sent.
+ */
+export function stubSignedInApi(victims?: (path: string) => VictimPage) {
   return stubApi((path) => {
     if (path.endsWith("/auth/me")) return jsonResponse(200, TEST_USER);
     if (path.endsWith("/auth/login")) return jsonResponse(200, TEST_LOGIN_RESPONSE);
+    if (path.includes("/victims/board")) {
+      return jsonResponse(200, victims ? victims(path).board : makeBoard());
+    }
+    if (path.includes("/victims")) {
+      const page = victims?.(path) ?? { items: [], board: makeBoard(), total: 0 };
+      return jsonResponse(200, page);
+    }
     return jsonResponse(404, { error: { code: "not_found", message: "No stub for " + path } });
   });
 }

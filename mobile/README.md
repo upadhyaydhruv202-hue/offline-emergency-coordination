@@ -75,20 +75,22 @@ lib/
 ├── data/
 │   ├── local/                 Drift database, tables, DAOs   <- authoritative
 │   └── remote/                backend client                 <- optional peer
-├── domain/entities/           Responder, ResponderRole, IncidentSummary
+├── core/utils/                UUID and temporary-id generation
+├── domain/entities/           Responder, Victim, TriageCategory, VictimStatus
 ├── features/
 │   ├── auth/                  application (Riverpod) / data / presentation
 │   ├── connectivity/          ONLINE · DEGRADED · OFFLINE
 │   ├── home/                  responder home
+│   ├── victims/               registration, triage, list, detail   <- Slice 2
 │   ├── profile/               session and device detail
 │   ├── placeholder/           honest stand-ins for unbuilt modules
 │   └── splash/                session restoration
 └── shared/widgets/            shell, panels, status chips
 ```
 
-## Slice 1 scope
+## Scope
 
-Implemented:
+**Slice 1**
 
 - Splash with real session restoration from SQLite
 - Login against `POST /auth/login`, plus offline demo mode
@@ -99,9 +101,25 @@ Implemented:
 - Connectivity service: `ONLINE` / `DEGRADED` / `OFFLINE`
 - GoRouter navigation for all eleven destinations
 
-Not implemented, and not simulated — `/incidents`, `/victims`, `/sos`,
-`/hazards`, `/tasks` and `/map` render a page naming the slice that delivers
-them.
+**Slice 2 — victims and triage, entirely offline**
+
+- Victim list with search, triage and status filters, critical-first ordering
+- Register, view, edit and reassess screens
+- `CRITICAL` / `URGENT` / `MODERATE` / `STABLE`, and five lifecycle statuses
+- Device-minted UUID plus a radio-readable tag (`V-8C1F-007`) from a local
+  counter, so the number on the triage tag exists before any server sees it
+- `OFFLINE`, `LOCAL DATA` and `SYNC PENDING` shown wherever victims are
+- Drift schema v2: the `victims` table
+
+Nothing in the victim flow calls the backend. `VictimRepository` has no HTTP
+client and no knowledge that one exists; records are written to SQLite and
+marked `pending`, and Slice 4 will be what finally moves them.
+
+The three screenshots in [`docs/screenshots/`](../docs/screenshots) named
+`mobile-*` were taken on a device with no network interface.
+
+Not implemented, and not simulated — `/incidents`, `/sos`, `/hazards`, `/tasks`
+and `/map` render a page naming the slice that delivers them.
 
 ## Tests
 
@@ -109,7 +127,7 @@ them.
 flutter test
 ```
 
-45 tests, all passing on Flutter 3.47.2 / Dart 3.13.2.
+79 tests, all passing on Flutter 3.47.2 / Dart 3.13.2.
 
 | File | Tests | Covers |
 | --- | --- | --- |
@@ -117,11 +135,23 @@ flutter test
 | `test/connectivity_test.dart` | 15 | The `ONLINE`/`DEGRADED`/`OFFLINE` rule and the service around it |
 | `test/auth_flow_test.dart` | 12 | Offline demo sessions, backend sign-in, role model, redirect policy |
 | `test/local_database_test.dart` | 11 | Drift initialisation, schema, session persistence, metadata |
+| `test/victim_store_test.dart` | 26 | Schema v2, registration, persistence, reassessment, ordering, filters, counts |
+| `test/victim_offline_flow_test.dart` | 8 | The whole offline journey through the real app widget |
 
-`app_smoke_test.dart` pumps `DisasterResponseApp` itself and overrides only the
-two things that need a physical device: where the database lives, and the
-platform connectivity channel. Everything else — router, theme, providers,
-screens — is the shipping code.
+`app_smoke_test.dart` and `victim_offline_flow_test.dart` pump
+`DisasterResponseApp` itself and override only the two things that need a
+physical device: where the database lives, and the platform connectivity
+channel. Everything else — router, theme, providers, screens — is the shipping
+code.
+
+The victim flow test goes further and supplies `ConnectivityTransport.none`
+with a backend probe that always returns false. Every assertion in it therefore
+holds on a handset with the radios off.
+
+To simulate a cold start it tears the tree down with
+`pumpWidget(const SizedBox.shrink())` before building it again over the same
+database. Building a second app over a live one leaves the router on its
+current route, which would prove nothing about what survived.
 
 Tests run in the Dart VM rather than on a device, so the SQLite binaries that
 `drift_flutter` bundles into the app are not loaded. The `sqlite3` dev
@@ -129,6 +159,10 @@ dependency supplies its own through a build hook, so no library override is
 needed on any platform.
 
 ## Adding a table in a later slice
+
+The `victims` table is the worked example: `lib/data/local/tables/victims.dart`,
+its DAO, the `from < 2` branch of `migration` in `app_database.dart`, and
+`test/victim_store_test.dart`.
 
 1. Add the table under `lib/data/local/tables/`.
 2. Register it in the `@DriftDatabase(tables: [...])` annotation.

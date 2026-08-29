@@ -16,7 +16,7 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final responder = ref.watch(authControllerProvider).responderOrNull;
-    final health = ref.watch(localDatabaseHealthProvider).valueOrNull;
+    final health = ref.watch(localDatabaseHealthProvider).value;
 
     if (responder == null) {
       return const Center(child: CircularProgressIndicator());

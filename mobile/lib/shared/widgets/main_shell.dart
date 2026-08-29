@@ -211,7 +211,7 @@ class _ShellDrawer extends ConsumerWidget {
             const Padding(
               padding: EdgeInsets.all(16),
               child: Text(
-                'slice-1 · foundation',
+                'slice-2 · victims and triage',
                 style: TextStyle(color: AppColors.ink500, fontSize: 11),
               ),
             ),

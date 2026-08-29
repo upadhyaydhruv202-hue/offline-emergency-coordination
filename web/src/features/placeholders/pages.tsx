@@ -4,7 +4,7 @@ export function IncidentsPage() {
   return (
     <PlaceholderPage
       title="Incidents"
-      slice="2"
+      slice="3"
       summary="Declaring an incident, setting its command structure and scoping every downstream record to it."
       scope={[
         "Incident declaration, severity and lifecycle state",
@@ -20,29 +20,13 @@ export function RespondersPage() {
   return (
     <PlaceholderPage
       title="Responders"
-      slice="2"
+      slice="3"
       summary="The roster of teams and volunteers checked in to an incident, with their assignments."
       scope={[
         "Team composition and check-in / check-out",
         "Skill and equipment attributes",
         "Task assignment and acknowledgement",
         "Last-known position and reporting interval",
-      ]}
-    />
-  );
-}
-
-export function VictimsPage() {
-  return (
-    <PlaceholderPage
-      title="Victims"
-      slice="2"
-      summary="Registration and triage of affected people, authored offline on the field device."
-      scope={[
-        "Victim registration with an offline-safe identifier",
-        "START / jumpSTART triage categories",
-        "Medical observations and interventions",
-        "Evacuation status and receiving facility",
       ]}
     />
   );
@@ -84,7 +68,7 @@ export function SettingsPage() {
   return (
     <PlaceholderPage
       title="Settings"
-      slice="2"
+      slice="4"
       summary="Command-centre configuration: users, roles, retention and integrations."
       scope={[
         "User administration and role assignment",

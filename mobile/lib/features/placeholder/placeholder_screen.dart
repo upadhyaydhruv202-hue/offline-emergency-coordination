@@ -92,7 +92,7 @@ class PlaceholderScreen extends StatelessWidget {
         const SizedBox(height: 24),
         const Text(
           'Nothing on this screen is simulated. The module is genuinely not '
-          'implemented in the Slice 1 foundation build.',
+          'implemented in this build.',
           style: TextStyle(
             color: AppColors.ink500,
             fontSize: 11,

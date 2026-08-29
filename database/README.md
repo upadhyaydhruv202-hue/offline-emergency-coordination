@@ -38,9 +38,17 @@ database the API will use.
 docker compose down -v     # destroys drp_db_data, re-runs database/init on next up
 ```
 
-## Slice 1 schema
+## Current schema
 
-One table, `users`, plus the `user_role` enum. The geospatial and
-synchronisation tables described in `docs/architecture.md` arrive with the
-slices that use them; PostGIS is installed now only because enabling an
-extension later needs superuser rights the application role will not hold.
+| Table | Migration | Notes |
+| --- | --- | --- |
+| `users` | `0001_initial_users` | Plus the `user_role` enum. |
+| `victims` | `0002_victims` | Plus `triage_category`, `victim_status`, `age_group` and `gender`. Keyed on the UUID minted by the device that registered the casualty. |
+
+`victims` is indexed on `(priority, updated_at)`, which is the order the roster
+is served in: most urgent first, then most recently touched.
+
+The geospatial and synchronisation tables described in `docs/architecture.md`
+arrive with the slices that use them; PostGIS is installed now only because
+enabling an extension later needs superuser rights the application role will
+not hold.

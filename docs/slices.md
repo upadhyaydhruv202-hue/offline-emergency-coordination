@@ -43,17 +43,51 @@ rest hangs off.
 - Docker Compose: PostgreSQL 16 + PostGIS 3.4 with a persistent volume, and the API
 - First-boot extension provisioning
 
-## Slice 2 — Incidents, victims and triage
+## Slice 2 — Offline victim registration and digital triage (complete)
+
+A responder registers, triages and updates casualties with the network off.
+The record is written to the device's own SQLite and is complete the moment it
+is saved.
+
+**Mobile**
+
+- Victim list, register, detail and edit/reassess screens
+- Four triage categories: `CRITICAL`, `URGENT`, `MODERATE`, `STABLE`
+- Five statuses: `REGISTERED`, `UNDER_TREATMENT`, `AWAITING_EVACUATION`,
+  `EVACUATED`, `DECEASED`
+- Device-minted UUIDs and radio-readable temporary ids (`V-8C1F-007`)
+- Search, filter by triage and status, critical-first ordering
+- `OFFLINE`, `LOCAL DATA` and `SYNC PENDING` shown on every victim surface
+- Drift schema v2: the `victims` table and its migration
+- 34 additional tests, including the full offline register → restart → reassess
+  journey through the real app widget
+
+**Backend**
+
+- `victims` table, `triage_category` / `victim_status` / `age_group` / `gender`
+  enums, Alembic migration `0002_victims`
+- `GET /api/v1/victims`, `GET /api/v1/victims/board`,
+  `GET /api/v1/victims/{id}`, `POST /api/v1/victims`,
+  `PATCH /api/v1/victims/{id}`
+- Idempotent upload: re-sending a record a device is unsure landed updates it
+  rather than conflicting
+- 24 additional tests
+
+**Web**
+
+- Victims page: counts for every triage category and the casualty roster
+- Search and filter, delegated to the backend query
+- Live victim counts on the dashboard, replacing two fabricated tiles
+- 10 additional tests
+
+Not in this slice, by design: peer synchronisation, position capture, incident
+scoping. A device's records stay on the device until Slice 4 gives them a way
+to travel.
+
+## Slice 3 — Incidents and spatial awareness
 
 - Incident declaration, lifecycle and sector breakdown
 - Responder roster, check-in, task assignment
-- Victim registration with offline-safe identifiers
-- START / jumpSTART triage capture, append-only
-- Mobile: full offline authoring of the above
-- Web: live incident and responder views replacing the placeholders
-
-## Slice 3 — Spatial awareness
-
 - `locations` on PostGIS `geography(Point, 4326)`
 - SOS beacons: raise, relay, acknowledge, stand down
 - Hazard reporting with exclusion radius and expiry
@@ -67,6 +101,7 @@ rest hangs off.
 - Deterministic conflict resolution; `sync_conflicts` for human adjudication
 - Append-only `audit_events`
 - Real "pending synchronisation" figure on the dashboard
+- Victims registered offline finally reach the command centre on their own
 
 ## Slice 5 — Mesh transport
 

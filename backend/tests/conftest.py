@@ -31,6 +31,7 @@ from app.main import create_app  # noqa: E402
 from app.models.base import Base  # noqa: E402
 from app.models.enums import UserRole  # noqa: E402
 from app.models.user import User  # noqa: E402
+from app.models.victim import Victim  # noqa: E402
 from app.schemas.user import UserCreate  # noqa: E402
 from app.services.auth_service import AuthService  # noqa: E402
 
@@ -52,8 +53,9 @@ def session() -> Iterator[Session]:
 
 
 @pytest.fixture(autouse=True)
-def _clean_users(session: Session) -> Iterator[None]:
+def _clean_tables(session: Session) -> Iterator[None]:
     yield
+    session.query(Victim).delete()
     session.query(User).delete()
     session.commit()
 
@@ -76,3 +78,9 @@ def responder(session: Session) -> User:
     )
     session.commit()
     return user
+
+
+@pytest.fixture
+def auth_headers(session: Session, responder: User) -> dict[str, str]:
+    token = AuthService(session).issue_tokens(responder).access_token
+    return {"Authorization": f"Bearer {token}"}

@@ -10,15 +10,24 @@ import '../../features/home/presentation/home_screen.dart';
 import '../../features/placeholder/placeholder_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/splash/splash_screen.dart';
+import '../../features/victims/presentation/victim_detail_screen.dart';
+import '../../features/victims/presentation/victim_edit_screen.dart';
+import '../../features/victims/presentation/victim_register_screen.dart';
+import '../../features/victims/presentation/victims_screen.dart';
 import '../../shared/widgets/main_shell.dart';
 import 'app_routes.dart';
 
 /// Routes that require a local session.
+///
+/// Paths that are not listed here at all still resolve to the login screen
+/// while signed out - see [_redirect] - so a victim's detail page cannot be
+/// reached by typing its URL.
 const Set<AppRoute> _protectedRoutes = {
   AppRoute.role,
   AppRoute.home,
   AppRoute.incidents,
   AppRoute.victims,
+  AppRoute.victimRegister,
   AppRoute.sos,
   AppRoute.hazards,
   AppRoute.tasks,
@@ -64,6 +73,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const HomeScreen(),
           ),
           GoRoute(
+            path: AppRoute.victims.path,
+            builder: (context, state) => const VictimsScreen(),
+          ),
+          GoRoute(
             path: AppRoute.profile.path,
             builder: (context, state) => const ProfileScreen(),
           ),
@@ -73,6 +86,26 @@ final routerProvider = Provider<GoRouter>((ref) {
               builder: (context, state) => PlaceholderScreen(spec: route),
             ),
         ],
+      ),
+
+      // Outside the shell: a form and a casualty record are full-screen tasks
+      // that are pushed and popped, not navigation destinations. `new` is
+      // declared before `:id` so it is not swallowed by the parameter.
+      GoRoute(
+        path: AppRoute.victimRegister.path,
+        builder: (context, state) => const VictimRegisterScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.victimDetail.path,
+        builder: (context, state) => VictimDetailScreen(
+          victimId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: AppRoute.victimEdit.path,
+        builder: (context, state) => VictimEditScreen(
+          victimId: state.pathParameters['id']!,
+        ),
       ),
     ],
   );
@@ -118,24 +151,13 @@ AppRoute? _routeFor(String location) {
 const List<PlaceholderSpec> _placeholderRoutes = [
   PlaceholderSpec(
     route: AppRoute.incidents,
-    slice: 2,
+    slice: 3,
     summary:
         'Declaring an incident and scoping every record captured on this device to it.',
     scope: [
       'Incident declaration and lifecycle',
       'Sector assignment for this device',
       'Command structure and reporting lines',
-    ],
-  ),
-  PlaceholderSpec(
-    route: AppRoute.victims,
-    slice: 2,
-    summary:
-        'Registering and triaging affected people, authored offline on this device.',
-    scope: [
-      'Victim registration with an offline-safe identifier',
-      'START / jumpSTART triage capture',
-      'Medical observations and interventions',
     ],
   ),
   PlaceholderSpec(
@@ -160,7 +182,7 @@ const List<PlaceholderSpec> _placeholderRoutes = [
   ),
   PlaceholderSpec(
     route: AppRoute.tasks,
-    slice: 2,
+    slice: 4,
     summary: 'The work assigned to this responder, and its acknowledgement.',
     scope: [
       'Task assignment and acceptance',

@@ -25,7 +25,7 @@ export function CommandShell() {
 
         <div className="border-t border-navy-700 px-4 py-3">
           <p className="label-caps">Build</p>
-          <p className="font-mono text-xs text-ink-400">slice-1 · foundation</p>
+          <p className="font-mono text-xs text-ink-400">slice-2 · victims and triage</p>
         </div>
       </aside>
 

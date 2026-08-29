@@ -35,7 +35,9 @@ def _guarded_app() -> FastAPI:
     router = APIRouter()
 
     @router.get("/command-only")
-    def command_only(_=Depends(require_roles(UserRole.INCIDENT_COMMANDER, UserRole.ADMIN))) -> dict[str, bool]:
+    def command_only(
+        _=Depends(require_roles(UserRole.INCIDENT_COMMANDER, UserRole.ADMIN)),
+    ) -> dict[str, bool]:
         return {"ok": True}
 
     app = FastAPI()

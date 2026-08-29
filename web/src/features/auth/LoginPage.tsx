@@ -77,7 +77,7 @@ export function LoginPage() {
           </dl>
         </div>
 
-        <p className="font-mono text-xs text-ink-500">slice-1 · foundation build</p>
+        <p className="font-mono text-xs text-ink-500">slice-2 · victims and triage</p>
       </section>
 
       <section className="flex items-center justify-center p-6">

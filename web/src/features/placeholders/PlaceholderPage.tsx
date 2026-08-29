@@ -39,8 +39,7 @@ export function PlaceholderPage({ title, slice, summary, scope }: PlaceholderPag
         </div>
 
         <p className="mt-6 text-xs leading-relaxed text-ink-500">
-          Nothing on this page is simulated. The module is genuinely not implemented in the Slice 1
-          foundation build.
+          Nothing on this page is simulated. The module is genuinely not implemented in this build.
         </p>
       </div>
     </div>

@@ -29,11 +29,11 @@ void main() {
       );
 
   group('initialisation', () {
-    test('opens and reports schema version 1', () async {
+    test('opens and reports the current schema version', () async {
       // Any query forces the migration to run.
       await database.select(database.appMetadata).get();
 
-      expect(database.schemaVersion, 1);
+      expect(database.schemaVersion, 2);
     });
 
     test('creates the Slice 1 tables', () async {

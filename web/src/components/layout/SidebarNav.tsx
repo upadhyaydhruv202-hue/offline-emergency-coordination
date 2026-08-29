@@ -28,9 +28,9 @@ const SECTIONS: NavSection[] = [
     heading: "Operations",
     items: [
       { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/incidents", label: "Incidents", icon: Siren, slice: "S2" },
-      { to: "/responders", label: "Responders", icon: Users, slice: "S2" },
-      { to: "/victims", label: "Victims", icon: UserSquare2, slice: "S2" },
+      { to: "/victims", label: "Victims", icon: UserSquare2 },
+      { to: "/incidents", label: "Incidents", icon: Siren, slice: "S3" },
+      { to: "/responders", label: "Responders", icon: Users, slice: "S3" },
       { to: "/map", label: "Map", icon: Map, slice: "S3" },
     ],
   },
@@ -40,7 +40,7 @@ const SECTIONS: NavSection[] = [
   },
   {
     heading: "System",
-    items: [{ to: "/settings", label: "Settings", icon: Settings, slice: "S2" }],
+    items: [{ to: "/settings", label: "Settings", icon: Settings, slice: "S4" }],
   },
 ];
 

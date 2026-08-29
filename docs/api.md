@@ -1,4 +1,4 @@
-# API reference (Slice 1)
+# API reference
 
 Interactive documentation is served at `http://localhost:8000/docs` while the
 backend is running.
@@ -74,6 +74,90 @@ matches.
 Returns a fresh token pair. Presenting an **access** token here returns 401: the
 `type` claim is checked, so the two are not interchangeable.
 
+## Victims
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/victims` | bearer | Roster plus counts. Most urgent first. |
+| `GET` | `/api/v1/victims/board` | bearer | Counts by triage category only. |
+| `GET` | `/api/v1/victims/{id}` | bearer | One record. |
+| `POST` | `/api/v1/victims` | bearer | Upload a record registered on a device. |
+| `PATCH` | `/api/v1/victims/{id}` | bearer | Reassess triage, change status, correct details. |
+
+These endpoints serve the command centre and receive uploads. **They are not on
+the critical path for a responder.** A handset registers casualties into its own
+SQLite and stays fully usable with this API unreachable; nothing in the mobile
+victim flow calls it.
+
+### `POST /api/v1/victims`
+
+The device supplies the identifiers, because the record already exists there
+and is already known by those identifiers on the radio and on the triage tag.
+
+```json
+{
+  "id": "6b1f8c2e-3d4a-4f21-9c77-0b2f1d5a8e33",
+  "temporary_id": "V-8C1F-007",
+  "name": "A. Sharma",
+  "age": 41,
+  "age_group": "ADULT",
+  "gender": "FEMALE",
+  "injury_type": "Crush injury to left leg",
+  "triage_category": "CRITICAL",
+  "created_by": "e0b1...device-session-id",
+  "created_at": "2026-08-29T08:12:00Z"
+}
+```
+
+Only `id`, `temporary_id`, `triage_category` and `created_by` are required. An
+unidentified casualty must never be harder to register than a named one.
+
+Re-posting the same `id` **updates** the stored record instead of returning 409.
+A device with an intermittent link retries uploads it cannot confirm, and that
+retry has to be harmless.
+
+`priority` is derived from `triage_category` and returned with every record —
+it is the sort key, lowest first, and cannot be set by a client.
+
+### `GET /api/v1/victims`
+
+| Query | Values |
+| --- | --- |
+| `search` | Matched against name, temporary id and injury type. |
+| `triage` | `CRITICAL` · `URGENT` · `MODERATE` · `STABLE` |
+| `status` | `REGISTERED` · `UNDER_TREATMENT` · `AWAITING_EVACUATION` · `EVACUATED` · `DECEASED` |
+| `limit` | 1–500, default 100 |
+| `offset` | default 0 |
+
+```json
+{
+  "items": [ { "...": "one VictimRead per row" } ],
+  "board": {
+    "total": 12,
+    "open_cases": 9,
+    "evacuated": 3,
+    "by_triage": { "critical": 4, "urgent": 3, "moderate": 2, "stable": 3 }
+  },
+  "total": 12
+}
+```
+
+`board` counts every record regardless of the active filter, and always carries
+all four categories. A command centre filtered to `STABLE` still needs to see
+that four criticals are outstanding, and an empty `CRITICAL` column must not be
+indistinguishable from a broken query.
+
+### `PATCH /api/v1/victims/{id}`
+
+A partial update; omitted fields are left alone. `id`, `temporary_id`,
+`created_by`, `created_at` and `priority` are ignored if sent — identity and
+provenance travel with the record from the device and are not the server's to
+rewrite.
+
+```json
+{ "triage_category": "CRITICAL", "status": "AWAITING_EVACUATION" }
+```
+
 ## Roles
 
 `RESCUE_TEAM`, `MEDICAL_TEAM`, `VOLUNTEER`, `INCIDENT_COMMANDER`, `ADMIN`.
@@ -85,8 +169,10 @@ accept with a single primitive:
 @router.get("/incidents", dependencies=[Depends(require_roles(UserRole.INCIDENT_COMMANDER, UserRole.ADMIN))])
 ```
 
-Slice 1 keeps this coarse on purpose. Per-incident scoping and delegated command
-are a later slice and will build on `require_roles`, not replace it.
+This stays coarse on purpose: the victim endpoints admit any authenticated
+responder, because in a mass-casualty incident anyone holding a device may be
+the one who finds the casualty. Per-incident scoping and delegated command are a
+later slice and will build on `require_roles`, not replace it.
 
 ## Errors
 
@@ -112,8 +198,7 @@ Every failure uses one envelope:
 | `service_unavailable` | 503 | A dependency is down. |
 | `internal_error` | 500 | Unexpected. Logged with a stack trace; the response body never leaks internals. |
 
-## Not implemented in Slice 1
+## Not implemented yet
 
-Incidents, victims, triage, SOS, hazards, tasks, resources, locations and the
-synchronisation endpoint. They arrive with their slices — see
-[`slices.md`](./slices.md).
+Incidents, SOS, hazards, tasks, resources, locations and the synchronisation
+endpoint. They arrive with their slices — see [`slices.md`](./slices.md).

@@ -1,10 +1,10 @@
-import 'dart:math';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/identifiers.dart';
 import 'app_database.dart';
 import 'daos/app_metadata_dao.dart';
 import 'daos/session_dao.dart';
+import 'daos/victim_dao.dart';
 import 'local_database_health.dart';
 import 'tables/app_metadata.dart';
 
@@ -23,6 +23,10 @@ final sessionDaoProvider = Provider<SessionDao>(
 
 final appMetadataDaoProvider = Provider<AppMetadataDao>(
   (ref) => AppMetadataDao(ref.watch(appDatabaseProvider)),
+);
+
+final victimDaoProvider = Provider<VictimDao>(
+  (ref) => VictimDao(ref.watch(appDatabaseProvider)),
 );
 
 /// Opens the datastore, mints the device identifier on first run, and reports
@@ -54,17 +58,3 @@ final localDatabaseHealthProvider =
     return LocalDatabaseHealth.failed(error.toString());
   }
 });
-
-/// A random, device-local identifier.
-///
-/// Slice 1 needs it only to label the datastore. Later slices give records an
-/// origin so that operations authored on different devices can be merged
-/// without collision; a cryptographic device identity is a hardening-slice
-/// concern.
-String generateDeviceId() {
-  final random = Random.secure();
-  final bytes = List<int>.generate(8, (_) => random.nextInt(256));
-  final hex =
-      bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join().toUpperCase();
-  return 'DRP-$hex';
-}
