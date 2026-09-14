@@ -115,8 +115,9 @@ Nothing in the victim flow calls the backend. `VictimRepository` has no HTTP
 client and no knowledge that one exists; records are written to SQLite and
 marked `pending`, and Slice 4 will be what finally moves them.
 
-The three screenshots in [`docs/screenshots/`](../docs/screenshots) named
-`mobile-*` were taken on a device with no network interface.
+Slice 2 screenshots (`mobile-victims`, `mobile-register`, `mobile-victim-detail`)
+and Slice 3 screenshots (`mobile-home`, `mobile-incidents`, `mobile-sos`,
+`mobile-hazards`, `mobile-tasks`) live in [`docs/screenshots/`](../docs/screenshots).
 
 **Slice 3 — field operations, entirely offline**
 

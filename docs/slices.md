@@ -105,6 +105,19 @@ change their own status. Every write is local SQLite. Nothing is sent.
   quick actions
 - **No step of this calls the backend.**
 
+Screenshots: [`mobile-home.png`](screenshots/mobile-home.png),
+[`mobile-incidents.png`](screenshots/mobile-incidents.png),
+[`mobile-incident-detail.png`](screenshots/mobile-incident-detail.png),
+[`mobile-sos.png`](screenshots/mobile-sos.png),
+[`mobile-hazards.png`](screenshots/mobile-hazards.png),
+[`mobile-tasks.png`](screenshots/mobile-tasks.png),
+[`web-dashboard.png`](screenshots/web-dashboard.png),
+[`web-incidents.png`](screenshots/web-incidents.png),
+[`web-responders.png`](screenshots/web-responders.png),
+[`web-hazards.png`](screenshots/web-hazards.png),
+[`web-sos.png`](screenshots/web-sos.png),
+[`web-tasks.png`](screenshots/web-tasks.png).
+
 **Backend**
 
 - `incidents`, `hazards`, `sos_events`, `tasks` tables; Alembic `0003_field_operations`

@@ -1,6 +1,6 @@
 # Offline-First Disaster Response & Emergency Coordination Platform
 
-**SIH 2026 prototype — Slice 2: Offline victim registration and digital triage**
+**SIH 2026 prototype — Slice 3: Field operations**
 
 > **Field devices must remain operational even when disconnected from the internet.**
 
@@ -49,26 +49,50 @@ the field.
 
 ## The field application
 
+**Slice 3 — incidents, GPS, SOS, hazards and tasks, entirely offline**
+
+| Field home | Incidents | SOS |
+| --- | --- | --- |
+| ![Field home](docs/screenshots/mobile-home.png) | ![Incidents](docs/screenshots/mobile-incidents.png) | ![SOS](docs/screenshots/mobile-sos.png) |
+
+| Hazard record | Tasks |
+| --- | --- |
+| ![Hazard](docs/screenshots/mobile-hazards.png) | ![Tasks](docs/screenshots/mobile-tasks.png) |
+
+Home is the field dashboard: current incident, responder status, last device
+position, pending local writes, and the four quick actions. SOS, hazards and
+tasks are written to SQLite on the handset. Nothing in these screens calls the
+backend.
+
+**Slice 2 — victims and triage**
+
 | Victim roster | Register | Record |
 | --- | --- | --- |
 | ![Victim roster](docs/screenshots/mobile-victims.png) | ![Register a casualty](docs/screenshots/mobile-register.png) | ![Casualty record](docs/screenshots/mobile-victim-detail.png) |
 
-Captured on a device with no network interface. The roster is sorted
-critical-first and headed by a live triage board; the registration form leads
-with the triage decision because that is the one field that must not be skipped;
-the record carries both the field id read aloud over radio (`V-CBEC-004`) and
-the UUID that will survive reconciliation.
+Captured with no uplink. The roster is sorted critical-first; the registration
+form leads with triage; the record carries the radio id (`V-CBEC-004`) and the
+UUID that will survive reconciliation.
 
 ## The command centre
 
 ![Command centre dashboard](docs/screenshots/web-dashboard.png)
 
+| Incidents | Responders |
+| --- | --- |
+| ![Incidents](docs/screenshots/web-incidents.png) | ![Responders](docs/screenshots/web-responders.png) |
+
+| Hazards | SOS | Tasks |
+| --- | --- | --- |
+| ![Hazards](docs/screenshots/web-hazards.png) | ![SOS](docs/screenshots/web-sos.png) | ![Tasks](docs/screenshots/web-tasks.png) |
+
 ![Casualty roster](docs/screenshots/web-victims.png)
 
-The Victims page and the two victim tiles on the dashboard are read from the
-backend and marked `LIVE`. Incident, responder, hazard and synchronisation
-figures are still hard-coded and carry the slice that will replace them — see
-[`docs/screenshots/`](docs/screenshots) for the sign-in and placeholder pages.
+Victim, incident, responder, hazard and SOS counts on the dashboard are `LIVE`
+from the coordination backend. Seed with `python -m app.db.seed --victims --field-ops`
+for a demo picture; empty pages are honest until Slice 4 uploads from the field.
+Pending synchronisation stays fabricated. Map, resources and settings remain
+slice placeholders — see [`docs/screenshots/`](docs/screenshots).
 
 ## Architecture
 
@@ -77,7 +101,7 @@ FIELD DEVICE
     ↓
 LOCAL DATABASE            ← implemented (Slice 1)
     ↓
-LOCAL OPERATIONAL STATE   ← implemented (Slice 2: victims and triage)
+LOCAL OPERATIONAL STATE   ← implemented (Slice 2–3: victims, incidents, SOS, hazards, tasks)
     ↓
 PEER SYNCHRONISATION
     ↓
