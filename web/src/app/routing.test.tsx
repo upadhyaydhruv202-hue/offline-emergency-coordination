@@ -29,6 +29,8 @@ describe("routing", () => {
     ["/hazards"],
     ["/sos"],
     ["/tasks"],
+    ["/sync"],
+    ["/sync/conflicts"],
     ["/map"],
     ["/resources"],
     ["/settings"],

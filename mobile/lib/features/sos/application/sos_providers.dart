@@ -6,6 +6,7 @@ import '../../../domain/entities/sos_event.dart';
 import '../../audit/application/audit_providers.dart';
 import '../../field_ops/application/operating_context.dart';
 import '../../location/application/location_providers.dart';
+import '../../sync/application/sync_providers.dart';
 import '../data/sos_repository.dart';
 import 'sos_service.dart';
 
@@ -13,6 +14,7 @@ final sosRepositoryProvider = Provider<SosRepository>(
   (ref) => SosRepository(
     events: ref.watch(sosDaoProvider),
     metadata: ref.watch(appMetadataDaoProvider),
+    journal: ref.watch(syncJournalProvider),
   ),
 );
 

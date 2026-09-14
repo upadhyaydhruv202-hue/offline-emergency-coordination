@@ -26,6 +26,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: scheme,
+      fontFamily: 'Roboto',
       scaffoldBackgroundColor: AppColors.navy950,
       splashFactory: InkSparkle.splashFactory,
     );
@@ -37,6 +38,7 @@ class AppTheme {
         elevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
+          fontFamily: 'Roboto',
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: AppColors.ink100,
@@ -76,7 +78,10 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(6),
           ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(

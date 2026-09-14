@@ -178,6 +178,7 @@ class _SosButton extends StatelessWidget {
             Text(
               'CREATE SOS',
               style: TextStyle(
+                fontFamily: 'Roboto',
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.6,

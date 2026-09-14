@@ -186,6 +186,7 @@ class HazardType(StrEnum):
     FIRE = "FIRE"
     SMOKE = "SMOKE"
     ROAD_BLOCKED = "ROAD_BLOCKED"
+    PARTIALLY_ACCESSIBLE = "PARTIALLY_ACCESSIBLE"
     BUILDING_DAMAGE = "BUILDING_DAMAGE"
     BRIDGE_RISK = "BRIDGE_RISK"
     LANDSLIDE = "LANDSLIDE"
@@ -302,3 +303,34 @@ class ResponderStatus(StrEnum):
     @property
     def label(self) -> str:
         return self.value.replace("_", " ").capitalize()
+
+
+class SyncEntityType(StrEnum):
+    INCIDENT = "INCIDENT"
+    VICTIM = "VICTIM"
+    HAZARD = "HAZARD"
+    TASK = "TASK"
+    SOS = "SOS"
+    RESPONDER_STATUS = "RESPONDER_STATUS"
+
+
+class SyncOperationType(StrEnum):
+    CREATE = "CREATE"
+    UPDATE = "UPDATE"
+    DELETE = "DELETE"
+
+
+class SyncQueueStatus(StrEnum):
+    PENDING = "PENDING"
+    IN_FLIGHT = "IN_FLIGHT"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
+    FAILED = "FAILED"
+    CONFLICT = "CONFLICT"
+
+
+class ConflictResolutionKind(StrEnum):
+    LAST_WRITER_WINS = "LAST_WRITER_WINS"
+    DEVICE_TIE_BREAK = "DEVICE_TIE_BREAK"
+    OPERATION_TIE_BREAK = "OPERATION_TIE_BREAK"
+    MERGED = "MERGED"
+    MANUAL_REVIEW = "MANUAL_REVIEW"

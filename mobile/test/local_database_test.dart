@@ -33,7 +33,7 @@ void main() {
       // Any query forces the migration to run.
       await database.select(database.appMetadata).get();
 
-      expect(database.schemaVersion, 4);
+      expect(database.schemaVersion, 5);
     });
 
     test('creates the Slice 1 tables and the later operational tables',
@@ -53,6 +53,9 @@ void main() {
           'tasks',
           'responder_status',
           'audit_events',
+          'sync_operations',
+          'sync_conflicts',
+          'sync_entity_heads',
         ]),
       );
     });

@@ -7,6 +7,7 @@ import { fetchHazardBoard } from "../../lib/api/hazards";
 import { fetchIncidentBoard } from "../../lib/api/incidents";
 import { fetchResponders } from "../../lib/api/responders";
 import { fetchSosBoard } from "../../lib/api/sos";
+import { fetchSyncStatus } from "../../lib/api/sync";
 import { useAuth } from "../auth/useAuth";
 import { useBoard } from "../ops/useOperationalQuery";
 import { useVictimBoard } from "../victims/useVictims";
@@ -19,6 +20,7 @@ export function DashboardPage() {
   const incidents = useBoard(useCallback(fetchIncidentBoard, []));
   const hazards = useBoard(useCallback(fetchHazardBoard, []));
   const sos = useBoard(useCallback(fetchSosBoard, []));
+  const sync = useBoard(useCallback(fetchSyncStatus, []));
   const responders = useBoard(
     useCallback((token: string, signal: AbortSignal) => fetchResponders(token, {}, signal), []),
   );
@@ -32,13 +34,13 @@ export function DashboardPage() {
             Signed in as {user?.full_name} · {user ? ROLE_LABELS[user.role] : ""}
           </p>
         </div>
-        <StatusPill tone="info">Slice 3 — field operations</StatusPill>
+        <StatusPill tone="info">Slice 4 — local-first sync</StatusPill>
       </div>
 
       <DemoDataNotice>
-        the pending-synchronisation figure is hard-coded. Victim, incident, responder, hazard and
-        SOS counts are live from the coordination backend. Field devices do not upload yet, so
-        those pages may honestly be empty.
+        the pending-synchronisation figure is peer ingest on this backend, not a live
+        mesh. Victim, incident, responder, hazard and SOS counts are live. Field
+        devices still do not auto-upload; seed or POST /sync/push for demo data.
       </DemoDataNotice>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -75,6 +77,16 @@ export function DashboardPage() {
           }
           caption={sos ? `${sos.by_status.created + sos.by_status.acknowledged} open SOS` : "No uplink"}
           tone="elevated"
+        />
+        <Tile
+          label="Pending synchronisation"
+          value={sync?.pending ?? "—"}
+          caption={
+            sync
+              ? `${sync.conflicts} conflicts recorded · SIMULATED peer ingest`
+              : "No uplink"
+          }
+          tone="info"
         />
         {OPERATIONAL_METRICS.map((metric) => (
           <MetricTile key={metric.key} metric={metric} />
@@ -141,7 +153,7 @@ export function DashboardPage() {
                   <span className="text-ink-500 tabular-nums">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <span className={index < 3 ? "text-nominal" : undefined}>{stage}</span>
+                  <span className={index < 6 ? "text-nominal" : undefined}>{stage}</span>
                 </li>
               ))}
             </ol>

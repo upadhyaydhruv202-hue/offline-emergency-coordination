@@ -5,6 +5,7 @@ import '../../app/theme/app_colors.dart';
 import '../../features/connectivity/connectivity_providers.dart';
 import '../../features/connectivity/connectivity_status.dart';
 import '../../features/sync/application/pending_changes_provider.dart';
+import '../../features/sync/application/sync_providers.dart';
 import 'status_chip.dart';
 
 /// States, on every operational screen, where the data actually is.
@@ -27,6 +28,9 @@ class LocalDataBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final connectivity = ref.watch(connectivityStatusProvider).value;
     final pending = ref.watch(pendingChangesProvider);
+    final stats = ref.watch(syncStatisticsProvider).value;
+    final resolvedConflicts = stats?.conflicts ?? 0;
+    final simulated = stats?.lastSyncKind == 'SIMULATED';
 
     final (connectivityColor, connectivityLabel) = switch (connectivity) {
       ConnectivityStatus.online => (AppColors.nominal, 'ONLINE'),
@@ -60,19 +64,34 @@ class LocalDataBanner extends ConsumerWidget {
               ),
               StatusChip(
                 label: pending == 0
-                    ? 'NOTHING PENDING'
+                    ? (simulated || stats?.lastSyncKind != null
+                        ? 'SYNCED'
+                        : 'NOTHING PENDING')
                     : '$pending ${pending == 1 ? 'CHANGE' : 'CHANGES'} PENDING',
                 color: pending == 0 ? AppColors.ink500 : AppColors.elevated,
                 icon: Icons.cloud_upload_outlined,
               ),
+              if (simulated)
+                const StatusChip(
+                  label: 'SIMULATED SYNC',
+                  color: AppColors.accentSoft,
+                  icon: Icons.science_outlined,
+                ),
+              if (resolvedConflicts > 0)
+                StatusChip(
+                  label:
+                      '$resolvedConflicts ${resolvedConflicts == 1 ? 'CONFLICT' : 'CONFLICTS'} RESOLVED',
+                  color: AppColors.elevated,
+                  icon: Icons.merge_type,
+                ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             message ??
-                'Every record below was written to this device and is complete '
-                    'without the backend. Peer synchronisation arrives in a '
-                    'later slice, so nothing has left the handset yet.',
+                'Records are written to this device first. Outstanding mutations '
+                'sit on the local sync queue until a simulated (or later, real) '
+                'peer exchange runs the CRDT merge. This is not mesh networking.',
             style: const TextStyle(
               color: AppColors.ink500,
               fontSize: 11,

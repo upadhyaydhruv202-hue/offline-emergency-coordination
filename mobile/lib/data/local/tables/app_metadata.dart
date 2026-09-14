@@ -23,6 +23,12 @@ class AppMetadataKeys {
   static const String schemaInitialisedAt = 'schema.initialised_at';
   static const String lastSyncAt = 'sync.last_completed_at';
 
+  /// Per-device monotonic counter used as the CRDT logical timestamp.
+  static const String logicalClock = 'sync.logical_counter';
+
+  /// Last simulated or real merge, labelled for the UI (SIMULATED / PEER).
+  static const String lastSyncKind = 'sync.last_kind';
+
   /// Counter behind the short victim identifier printed on a triage tag.
   static const String victimSequence = 'victim.sequence';
 

@@ -17,11 +17,11 @@ LOCAL DATABASE            ← Slice 1 (implemented)
     ↓
 LOCAL OPERATIONAL STATE   ← Slice 2–3 (implemented: victims, incidents, SOS, hazards, tasks)
     ↓
-PEER SYNCHRONISATION
+PEER SYNCHRONISATION      ← Slice 4 (simulated transport + CRDT; radios are Slice 5)
     ↓
-CONFLICT RESOLUTION
+CONFLICT RESOLUTION       ← Slice 4 (deterministic LWW-register)
     ↓
-SHARED OPERATIONAL STATE
+SHARED OPERATIONAL STATE  ← Slice 4 (devices converge after exchange)
     ↓
 DIGITAL TWIN
     ↓
@@ -90,8 +90,46 @@ repositories / DAOs            all database access
 models / tables                schema
 ```
 
-A route never opens a session; a widget never writes SQL. This is what makes
-the sync layer insertable later without rewriting the UI.
+A route never opens a session; a widget never writes SQL. The Slice 4 sync
+layer sits beside repositories: UI → controller → repository → local mutation →
+`SyncJournal` → `SyncService` → `CrdtEngine`.
+
+## Why local-first, and why a CRDT
+
+A central server cannot be the operational authority during a network partition.
+Two responders on Road R-12 must still record what they see. When connectivity
+returns, those locally generated operations are exchanged. The merge is a
+**state-based last-writer-wins register** over whole entity snapshots, totally
+ordered by:
+
+1. `logicalTimestamp` (a per-device monotonic counter, not wall-clock)
+2. `deviceId` (lexicographic)
+3. `operationId` (UUID, lexicographic)
+
+That total order is what makes `merge(A,B) == merge(B,A)` and what makes equal
+wall-clock times still converge. Conflicts are recorded even when resolution is
+automatic.
+
+The CRDT/sync layer is **transport-independent**:
+
+```
+Bluetooth / Wi-Fi Direct / LoRa / Internet
+        ↓
+   SyncService
+        ↓
+   CRDT engine
+        ↓
+   SQLite
+```
+
+Slice 4 supplies a `SimulatedTransport`. Radios are Slice 5.
+
+**Tombstones:** deletes set `deleted` / `deletedAt` / `deletedBy` on
+`sync_entity_heads`. Rows are not physically removed. Garbage collection is
+future work.
+
+**Limitation:** merge is snapshot-LWW, not field-wise. Two devices editing
+different fields of the same victim still produce one winning snapshot.
 
 ## Data model
 
@@ -100,12 +138,11 @@ the sync layer insertable later without rewriting the UI.
 `pgcrypto` and `pg_trgm` are installed at first boot because enabling an
 extension later needs superuser rights the application role will not hold.
 
-**Mobile (SQLite, schema v3)** — `app_metadata`, `local_sessions`, `victims`,
-`incidents`, `locations`, `sos_events`, `hazards`, `tasks`, `responder_status`,
-`audit_events`.
+**Mobile (SQLite, schema v5)** — Slice 1–3 tables plus `sync_operations`,
+`sync_conflicts` and `sync_entity_heads` (version + tombstones).
 
 The two `victims` tables carry the same fields under the same names, because a
-device's row is uploaded verbatim in Slice 4. Both key on the UUID the device
+device's row is uploaded as a sync operation in Slice 4. Both key on the UUID the device
 minted, so the record has one identity for its whole life.
 
 Slice 2 deliberately does **not** add a separate `triage_records` table.
@@ -123,10 +160,11 @@ Planned tables and the slice that introduces them:
 | `hazards` | 3 | Local hazard reports. Implemented. |
 | `locations` | 3 | Device GPS fixes. Implemented on the handset. |
 | `responder_status` | 3 | One current status per responder, on the device. |
-| `audit_events` | 3 | Lightweight local trail. Shared peer log is Slice 4. |
-| `sync_operations` | 4 | The outbound queue; the unit of synchronisation. |
-| `sync_conflicts` | 4 | Divergences a human must adjudicate. |
-| `triage_records` | 4 | Append-only reassessment history, once merge exists. |
+| `audit_events` | 3 | Lightweight local trail. Sync events reuse the same table. |
+| `sync_operations` | 4 | Outbound/inbound queue; the unit of synchronisation. Implemented. |
+| `sync_conflicts` | 4 | Recorded even when auto-resolved. Implemented. |
+| `sync_entity_heads` | 4 | Logical version + tombstones. GC is future work. |
+| `triage_records` | later | Append-only reassessment history. |
 
 `victims.latitude`, `victims.longitude` and `victims.incident_id` are written
 when a casualty is registered against the current operation and last known
@@ -151,12 +189,16 @@ Explicitly **not** implemented, and not faked: zero-knowledge proofs,
 decentralised identifiers, WebAuthn, blockchain anchoring, device attestation,
 trust and reputation scoring.
 
+- Inbound sync operations are validated (entity type, operation type, identifiers,
+  timestamps, payload shape) and rejected rather than applied blindly.
+
 ## Deferred to the Grand Finale build
 
 Bluetooth/BLE, Wi-Fi Direct, LoRa, Wi-Fi HaLow, multi-hop mesh routing,
-store-carry-forward, CRDT merge strategies, Raspberry Pi / Jetson edge nodes,
+store-carry-forward, Raspberry Pi / Jetson edge nodes,
 on-device AI, the Digital Twin, and logistics verification.
 
 The connectivity model already anticipates the first group: `ConnectivityTransport`
 enumerates link types rather than a boolean, and Bluetooth alone already resolves
 to `DEGRADED` — a real link, but not an internet path.
+CRDT merge is implemented in Slice 4 and does not depend on those radios.

@@ -12,6 +12,8 @@ import {
 } from "../features/placeholders/pages";
 import { RespondersPage } from "../features/responders/RespondersPage";
 import { SosPage } from "../features/sos/SosPage";
+import { ConflictViewerPage } from "../features/sync/ConflictViewerPage";
+import { SyncDashboardPage } from "../features/sync/SyncDashboardPage";
 import { TasksPage } from "../features/tasks/TasksPage";
 import { VictimsPage } from "../features/victims/VictimsPage";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -33,6 +35,8 @@ export const routes: RouteObject[] = [
           { path: "hazards", element: <HazardsPage /> },
           { path: "sos", element: <SosPage /> },
           { path: "tasks", element: <TasksPage /> },
+          { path: "sync", element: <SyncDashboardPage /> },
+          { path: "sync/conflicts", element: <ConflictViewerPage /> },
           { path: "map", element: <MapPage /> },
           { path: "resources", element: <ResourcesPage /> },
           { path: "settings", element: <SettingsPage /> },

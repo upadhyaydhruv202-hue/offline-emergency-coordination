@@ -5,6 +5,7 @@ Run with::
     python -m app.db.seed
     python -m app.db.seed --victims     # also insert demo casualties
     python -m app.db.seed --field-ops   # also insert demo incidents/hazards/SOS/tasks
+    python -m app.db.seed --sync-demo   # ingest the Road R-12 peer-conflict pair
 
 Credentials are never stored in source. The password comes from ``SEED_PASSWORD``;
 if it is absent, a strong one is generated and printed once so the operator can
@@ -13,6 +14,7 @@ record it.
 
 from __future__ import annotations
 
+import json
 import secrets
 import sys
 import uuid
@@ -33,12 +35,18 @@ from app.models.enums import (
     IncidentStatus,
     SosPriority,
     SosStatus,
+    SyncEntityType,
+    SyncOperationType,
+    SyncQueueStatus,
+    ConflictResolutionKind,
     TaskPriority,
     TaskStatus,
     TriageCategory,
     UserRole,
     VictimStatus,
 )
+from app.models.sync_conflict import SyncConflict
+from app.models.sync_operation import SyncOperation
 from app.repositories.hazard_repository import HazardRepository
 from app.repositories.incident_repository import IncidentRepository
 from app.repositories.sos_event_repository import SosEventRepository
@@ -481,11 +489,73 @@ def seed_field_operations(session: Session) -> tuple[int, int]:
     return created, skipped
 
 
+def seed_sync_demo(session: Session) -> tuple[int, int]:
+    """Two peer operations on Road R-12 plus the recorded conflict."""
+    entity_id = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee0012"
+    existing = session.query(SyncOperation).filter(SyncOperation.entity_id == entity_id).count()
+    if existing:
+        return 0, existing
+
+    now = datetime.now(UTC)
+    alpha_id = uuid.UUID("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee00a1")
+    bravo_id = uuid.UUID("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee00b1")
+    session.add(
+        SyncOperation(
+            id=alpha_id,
+            operation_id=alpha_id,
+            device_id="DRP-ALPHA001",
+            actor_id="responder-alpha",
+            entity_type=SyncEntityType.HAZARD,
+            entity_id=entity_id,
+            operation_type=SyncOperationType.UPDATE,
+            payload_json=json.dumps({"type": "ROAD_BLOCKED", "severity": "HIGH", "description": "Road R-12"}),
+            queue_status=SyncQueueStatus.ACKNOWLEDGED,
+            version=2,
+            logical_timestamp=2,
+            parent_version=1,
+        )
+    )
+    session.add(
+        SyncOperation(
+            id=bravo_id,
+            operation_id=bravo_id,
+            device_id="DRP-BRAVO001",
+            actor_id="responder-bravo",
+            entity_type=SyncEntityType.HAZARD,
+            entity_id=entity_id,
+            operation_type=SyncOperationType.UPDATE,
+            payload_json=json.dumps(
+                {"type": "PARTIALLY_ACCESSIBLE", "severity": "MEDIUM", "description": "Road R-12"}
+            ),
+            queue_status=SyncQueueStatus.ACKNOWLEDGED,
+            version=2,
+            logical_timestamp=2,
+            parent_version=1,
+        )
+    )
+    session.add(
+        SyncConflict(
+            entity_type=SyncEntityType.HAZARD,
+            entity_id=entity_id,
+            operation_a_id=alpha_id,
+            operation_b_id=bravo_id,
+            detected_at=now,
+            resolution=ConflictResolutionKind.DEVICE_TIE_BREAK,
+            winner_operation_id=bravo_id,
+            loser_operation_id=alpha_id,
+            reason="Equal logical timestamps; device id tie-break (DRP-BRAVO001 > DRP-ALPHA001).",
+            resolved_at=now,
+        )
+    )
+    return 2, 0
+
+
 def main() -> int:
     password, generated = resolve_seed_password()
     flags = sys.argv[1:]
     with_victims = "--victims" in flags
     with_field_ops = "--field-ops" in flags
+    with_sync_demo = "--sync-demo" in flags
 
     with SessionFactory() as session:
         created, skipped = seed_users(session, password)
@@ -497,6 +567,10 @@ def main() -> int:
 
         if with_field_ops:
             field_ops_created, field_ops_skipped = seed_field_operations(session)
+            session.commit()
+
+        if with_sync_demo:
+            sync_created, sync_skipped = seed_sync_demo(session)
             session.commit()
 
     print(f"Seed complete: {created} created, {skipped} already present.")
@@ -514,6 +588,12 @@ def main() -> int:
             f"\nDemo field operations: {field_ops_created} created, "
             f"{field_ops_skipped} already present. "
             "Tagged INC-SEED-*, HZ-SEED-*, SOS-SEED-* and TASK-SEED-*."
+        )
+
+    if with_sync_demo:
+        print(
+            f"\nDemo sync ingest: {sync_created} operations created, "
+            f"{sync_skipped} already present. Road R-12 conflict is labelled SIMULATED."
         )
 
     if generated:

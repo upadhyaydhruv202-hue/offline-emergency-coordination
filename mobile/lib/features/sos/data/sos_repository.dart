@@ -9,6 +9,10 @@ import '../../../domain/entities/sos_event.dart';
 import '../../../domain/entities/sos_priority.dart';
 import '../../../domain/entities/sos_status.dart';
 import '../../../domain/entities/sync_status.dart';
+import '../../../domain/entities/sync_entity_type.dart';
+import '../../../domain/entities/sync_operation_type.dart';
+import '../../sync/data/entity_payloads.dart';
+import '../../sync/data/sync_journal.dart';
 
 /// How a distress call comes into existence and changes.
 ///
@@ -18,11 +22,15 @@ import '../../../domain/entities/sync_status.dart';
 /// presses the button gets a timestamped, positioned, durable record, and the
 /// interface tells them exactly that rather than implying help is on its way.
 class SosRepository {
-  SosRepository({required this.events, required this.metadata})
-      : _codes = FieldCodeMinter(metadata);
+  SosRepository({
+    required this.events,
+    required this.metadata,
+    this.journal,
+  }) : _codes = FieldCodeMinter(metadata);
 
   final SosDao events;
   final AppMetadataDao metadata;
+  final SyncJournal? journal;
   final FieldCodeMinter _codes;
 
   Stream<List<SosEvent>> watchEvents() => events.watchEvents();
@@ -72,6 +80,14 @@ class SosRepository {
     );
 
     await events.insertEvent(event);
+    await journal?.record(
+      entityType: SyncEntityType.sos,
+      entityId: event.id,
+      operationType: SyncOperationType.create,
+      payload: sosPayload(event),
+      actorId: createdBy,
+      now: timestamp,
+    );
     return event;
   }
 
@@ -92,6 +108,14 @@ class SosRepository {
     );
 
     await events.updateEvent(updated);
+    await journal?.record(
+      entityType: SyncEntityType.sos,
+      entityId: updated.id,
+      operationType: SyncOperationType.update,
+      payload: sosPayload(updated),
+      actorId: event.createdBy,
+      now: updated.updatedAt,
+    );
     return updated;
   }
 

@@ -134,15 +134,43 @@ Screenshots: [`mobile-home.png`](screenshots/mobile-home.png),
 Not in this slice, by design: peer synchronisation, CRDT, mesh, live map,
 automatic SOS transmission.
 
-## Slice 4 — Synchronisation
+## Slice 4 — Local-first synchronisation
 
-- `sync_operations` outbound queue on the device
-- Backend sync endpoint with idempotent, ordered application
-- Deterministic conflict resolution; `sync_conflicts` for human adjudication
-- Shared `audit_events` between peers
-- Real "pending synchronisation" figure on the dashboard
-- Victims, incidents, SOS, hazards and tasks registered offline finally reach
-  the command centre on their own
+Implemented. Devices remain operational authorities while disconnected. When
+operations are exchanged (today through a **simulated transport**, later through
+BLE / Wi-Fi Direct / LoRa), a transport-independent `SyncService` feeds a
+state-based LWW-register CRDT. Conflicts are **detected and recorded** even when
+they are resolved automatically. Equal logical timestamps still converge because
+ordering is `logicalTimestamp → deviceId → operationId`.
+
+This is **deterministic conflict resolution** / **conflict-free convergence after
+synchronisation**. It is **not** mesh networking and **not** a claim of zero
+conflicts.
+
+**Mobile**
+
+- Persistent `device.id` (UUID, not email)
+- `SyncOperation` journal on every Slice 2/3 mutation
+- Drift schema v5: `sync_operations`, `sync_conflicts`, `sync_entity_heads`
+  (tombstones live on heads; garbage collection is future work)
+- `CrdtEngine` with no Flutter widgets
+- Sync Center, pending queue, conflict viewer, Road R-12 demo
+- Status copy: LOCAL / SIMULATED SYNC / SYNCHRONIZED — never "real mesh"
+
+**Backend**
+
+- Alembic `0004_sync`
+- `POST /api/v1/sync/push`, `POST /api/v1/sync/pull`, status and conflicts
+- Development scenario `GET /api/v1/sync/demo-scenario`
+- Optional seed: `python -m app.db.seed --sync-demo`
+
+**Web**
+
+- Synchronisation dashboard and conflict viewer
+- Live pending/conflict counts on the dashboard
+
+Not in this slice, by design: BLE, Wi-Fi Direct, LoRa, mesh routing,
+store-carry-forward, IBLT, Merkle DAG, PBFT, HLC.
 
 ## Slice 5 — Mesh transport
 

@@ -10,6 +10,7 @@ import '../../audit/application/audit_providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/application/auth_state.dart';
 import '../../field_ops/application/operating_context.dart';
+import '../../sync/application/sync_providers.dart';
 import '../data/task_repository.dart';
 import 'task_service.dart';
 
@@ -17,6 +18,7 @@ final taskRepositoryProvider = Provider<TaskRepository>(
   (ref) => TaskRepository(
     tasks: ref.watch(taskDaoProvider),
     metadata: ref.watch(appMetadataDaoProvider),
+    journal: ref.watch(syncJournalProvider),
   ),
 );
 

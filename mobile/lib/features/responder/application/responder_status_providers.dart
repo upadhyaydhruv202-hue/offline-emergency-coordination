@@ -9,10 +9,14 @@ import '../../audit/data/audit_repository.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/application/auth_state.dart';
 import '../../field_ops/application/operating_context.dart';
+import '../../sync/application/sync_providers.dart';
 import '../data/responder_status_repository.dart';
 
 final responderStatusRepositoryProvider = Provider<ResponderStatusRepository>(
-  (ref) => ResponderStatusRepository(ref.watch(responderStatusDaoProvider)),
+  (ref) => ResponderStatusRepository(
+    ref.watch(responderStatusDaoProvider),
+    journal: ref.watch(syncJournalProvider),
+  ),
 );
 
 /// The signed-in responder's current operational status.

@@ -125,6 +125,45 @@ export function stubSignedInApi(victims?: (path: string) => VictimPage) {
     if (path.includes("/responders")) {
       return jsonResponse(200, { items: [TEST_USER], total: 1 });
     }
+    if (path.includes("/sync/demo-scenario")) {
+      return jsonResponse(200, {
+        kind: "DEVELOPMENT_SCENARIO",
+        transport: "SIMULATED",
+        incident: "Ahmedabad Earthquake Response",
+        zone: "04",
+        entity: "Road R-12",
+        entity_id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee0012",
+        device_a: {
+          device_id: "DRP-ALPHA001",
+          actor: "Responder Alpha",
+          type: "ROAD_BLOCKED",
+          severity: "HIGH",
+        },
+        device_b: {
+          device_id: "DRP-BRAVO001",
+          actor: "Responder Bravo",
+          type: "PARTIALLY_ACCESSIBLE",
+          severity: "MEDIUM",
+        },
+        resolution: "LAST_WRITER_WINS",
+        winner_device: "DRP-BRAVO001",
+        final_state: { type: "PARTIALLY_ACCESSIBLE", severity: "MEDIUM" },
+        note: "Deterministic conflict resolution. This is not mesh networking.",
+      });
+    }
+    if (path.includes("/sync/status")) {
+      return jsonResponse(200, {
+        pending: 0,
+        acknowledged: 2,
+        failed: 0,
+        conflicts: 1,
+        last_push_at: null,
+        note: "Peer ingest only. This is not live mesh networking.",
+      });
+    }
+    if (path.includes("/sync/conflicts")) {
+      return jsonResponse(200, []);
+    }
     return jsonResponse(404, { error: { code: "not_found", message: "No stub for " + path } });
   });
 }

@@ -33,6 +33,8 @@ from app.models.enums import UserRole  # noqa: E402
 from app.models.hazard import Hazard  # noqa: E402
 from app.models.incident import Incident  # noqa: E402
 from app.models.sos_event import SosEvent  # noqa: E402
+from app.models.sync_conflict import SyncConflict  # noqa: E402
+from app.models.sync_operation import SyncOperation  # noqa: E402
 from app.models.task import Task  # noqa: E402
 from app.models.user import User  # noqa: E402
 from app.models.victim import Victim  # noqa: E402
@@ -66,6 +68,8 @@ def _clean_tables(session: Session) -> Iterator[None]:
     session.query(Task).delete()
     session.query(Incident).delete()
     session.query(Victim).delete()
+    session.query(SyncConflict).delete()
+    session.query(SyncOperation).delete()
     session.query(User).delete()
     session.commit()
 

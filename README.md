@@ -1,6 +1,6 @@
 # Offline-First Disaster Response & Emergency Coordination Platform
 
-**SIH 2026 prototype — Slice 3: Field operations**
+**SIH 2026 prototype — Slice 4: Local-first synchronisation**
 
 > **Field devices must remain operational even when disconnected from the internet.**
 
@@ -24,7 +24,7 @@ The field device's own database is the **primary operational datastore**, not a
 cache.
 
 ```
-Mobile → Local DB → (later) Sync Layer → Backend
+Mobile → Local DB → SyncService / CRDT → (later: BLE / Wi-Fi Direct / LoRa) → Peers
 ```
 
 and never
@@ -88,11 +88,11 @@ UUID that will survive reconciliation.
 
 ![Casualty roster](docs/screenshots/web-victims.png)
 
-Victim, incident, responder, hazard and SOS counts on the dashboard are `LIVE`
-from the coordination backend. Seed with `python -m app.db.seed --victims --field-ops`
-for a demo picture; empty pages are honest until Slice 4 uploads from the field.
-Pending synchronisation stays fabricated. Map, resources and settings remain
-slice placeholders — see [`docs/screenshots/`](docs/screenshots).
+Victim, incident, responder, hazard, SOS and pending-sync counts on the
+dashboard are live from the coordination backend (sync is peer ingest, not mesh).
+Seed with `python -m app.db.seed --victims --field-ops --sync-demo` for a demo
+picture. Map, resources and settings remain later-slice placeholders — see
+[`docs/screenshots/`](docs/screenshots).
 
 ## Architecture
 
@@ -413,24 +413,35 @@ Drift schema v3. **No step of this calls the backend.**
 responder and hazard counts on the dashboard. The map stays an honest Slice 5
 placeholder.
 
+### Slice 4 — Local-first synchronisation
+
+**Mobile** — every Slice 2/3 mutation journals a `SyncOperation`; persistent
+device UUID; Drift schema v5; CRDT engine with deterministic LWW; Sync Center
+and Road R-12 Device A / Device B simulator (**SIMULATED SYNC**, not mesh).
+
+**Backend** — `sync_operations` / `sync_conflicts`; `0004_sync`;
+`POST /sync/push` and `POST /sync/pull`; demo scenario endpoint;
+`python -m app.db.seed --sync-demo`.
+
+**Web** — Synchronisation dashboard, conflict viewer, live pending/conflict
+counts.
+
 ## Deliberately not implemented
 
-CRDT synchronisation, mesh networking, the Digital Twin, AI, live operational
-maps, routing, hospital and resource management, and advanced security (ZKP,
-DID, WebAuthn, blockchain, device trust).
+Mesh networking, the Digital Twin, AI, live operational maps, routing, hospital
+and resource management, and advanced security (ZKP, DID, WebAuthn, blockchain,
+device trust).
 
-None of it is stubbed or simulated. Every unbuilt module renders a page naming
-the slice that will deliver it. See [`docs/slices.md`](docs/slices.md).
+None of the unbuilt modules is faked as working. See [`docs/slices.md`](docs/slices.md).
 
-Two things are worth being explicit about, because their absence is a design
-decision rather than an omission:
+Two things are worth being explicit about:
 
-- **Victim records do not leave the device.** The upload endpoint exists and is
-  tested, but the mobile app never calls it. Giving records a way to travel is
-  Slice 4's job, and building half of it now would mean building it twice.
-- **Triage history is not kept.** Reassessment overwrites the category and bumps
-  `updated_at`. An append-only clinical record is worth having once there is a
-  synchronisation layer to merge two devices' versions of it.
+- **Victim records still do not auto-upload over HTTP.** Slice 4 moves state by
+  exchanging `SyncOperation`s through a simulated transport (and later radios).
+  The original REST upload routes remain for a coordination peer that chooses
+  to ingest records that way.
+- **Triage history is not kept as an append-only log.** Snapshot LWW still
+  overwrites the category on the winning victim row.
 
 ## Known limitations
 
@@ -442,11 +453,11 @@ decision rather than an omission:
   on a cold cache. Subsequent runs are much faster.
 - **Development JWT keys are ephemeral.** With `JWT_SECRET_KEY` blank, restarting
   the backend invalidates every issued token. Set one to avoid this.
-- **Pending synchronisation is still fabricated.** Victim, incident, responder
-  and hazard counts are live; the pending-sync tile is hard-coded until Slice 4.
-- **The command centre only sees uploaded records.** The mobile app does not
-  upload yet. `python -m app.db.seed --victims --field-ops` fills the pages for
-  a demo. Empty pages are the honest state until Slice 4.
+- **Pending synchronisation is peer ingest.** The dashboard tile reads
+  `GET /sync/status`. It is not a live mesh count.
+- **The command centre only sees what was pushed or seeded.**
+  `python -m app.db.seed --victims --field-ops --sync-demo` fills the pages for
+  a demo. Empty pages remain the honest state when nothing was ingested.
 - **Vitest uses the `threads` pool.** The default `forks` pool fails to start
   workers when the repository path contains a space.
 

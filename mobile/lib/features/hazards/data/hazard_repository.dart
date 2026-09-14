@@ -9,6 +9,10 @@ import '../../../domain/entities/hazard_draft.dart';
 import '../../../domain/entities/hazard_query.dart';
 import '../../../domain/entities/hazard_status.dart';
 import '../../../domain/entities/sync_status.dart';
+import '../../sync/data/entity_payloads.dart';
+import '../../sync/data/sync_journal.dart';
+import '../../../domain/entities/sync_entity_type.dart';
+import '../../../domain/entities/sync_operation_type.dart';
 
 /// How a hazard report comes into existence and changes.
 ///
@@ -17,11 +21,15 @@ import '../../../domain/entities/sync_status.dart';
 /// exists; making it wait for a network would mean the team that needed the
 /// warning has already walked into the thing being reported.
 class HazardRepository {
-  HazardRepository({required this.hazards, required this.metadata})
-      : _codes = FieldCodeMinter(metadata);
+  HazardRepository({
+    required this.hazards,
+    required this.metadata,
+    this.journal,
+  }) : _codes = FieldCodeMinter(metadata);
 
   final HazardDao hazards;
   final AppMetadataDao metadata;
+  final SyncJournal? journal;
   final FieldCodeMinter _codes;
 
   Stream<List<Hazard>> watchHazards(HazardQuery query) =>
@@ -69,6 +77,14 @@ class HazardRepository {
     );
 
     await hazards.insertHazard(hazard);
+    await journal?.record(
+      entityType: SyncEntityType.hazard,
+      entityId: hazard.id,
+      operationType: SyncOperationType.create,
+      payload: hazardPayload(hazard),
+      actorId: reportedBy,
+      now: timestamp,
+    );
     return hazard;
   }
 
@@ -95,6 +111,14 @@ class HazardRepository {
     );
 
     await hazards.updateHazard(updated);
+    await journal?.record(
+      entityType: SyncEntityType.hazard,
+      entityId: updated.id,
+      operationType: SyncOperationType.update,
+      payload: hazardPayload(updated),
+      actorId: hazard.reportedBy,
+      now: updated.updatedAt,
+    );
     return updated;
   }
 
@@ -111,6 +135,14 @@ class HazardRepository {
     );
 
     await hazards.updateHazard(updated);
+    await journal?.record(
+      entityType: SyncEntityType.hazard,
+      entityId: updated.id,
+      operationType: SyncOperationType.update,
+      payload: hazardPayload(updated),
+      actorId: hazard.reportedBy,
+      now: updated.updatedAt,
+    );
     return updated;
   }
 

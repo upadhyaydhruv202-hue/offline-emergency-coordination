@@ -32,6 +32,10 @@ enum AppRoute {
   taskDetail('/tasks/:id', 'Task'),
 
   map('/map', 'Map'),
+  sync('/sync', 'Sync'),
+  syncPending('/sync/pending', 'Pending operations'),
+  syncConflicts('/sync/conflicts', 'Conflicts'),
+  syncConflictDetail('/sync/conflicts/:id', 'Conflict'),
   profile('/profile', 'Profile');
 
   const AppRoute(this.path, this.title);
@@ -57,4 +61,6 @@ enum AppRoute {
   static String hazardEditPath(String id) => '/hazards/$id/edit';
 
   static String taskDetailPath(String id) => '/tasks/$id';
+
+  static String syncConflictDetailPath(String id) => '/sync/conflicts/$id';
 }

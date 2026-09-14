@@ -11,6 +11,11 @@ import '../../../domain/entities/victim_draft.dart';
 import '../../../domain/entities/victim_query.dart';
 import '../../../domain/entities/victim_status.dart';
 
+import '../../sync/data/entity_payloads.dart';
+import '../../sync/data/sync_journal.dart';
+import '../../../domain/entities/sync_entity_type.dart';
+import '../../../domain/entities/sync_operation_type.dart';
+
 /// How a victim record comes into existence and changes.
 ///
 /// The rule this file exists to enforce: **registration completes against
@@ -19,10 +24,15 @@ import '../../../domain/entities/victim_status.dart';
 /// responder in a basement with no signal gets the same result as one standing
 /// next to a working uplink.
 class VictimRepository {
-  const VictimRepository({required this.victims, required this.metadata});
+  const VictimRepository({
+    required this.victims,
+    required this.metadata,
+    this.journal,
+  });
 
   final VictimDao victims;
   final AppMetadataDao metadata;
+  final SyncJournal? journal;
 
   /// Short ids to try before falling back to a randomised one. A clash needs
   /// the counter and the table to have drifted apart — a restore from backup
@@ -85,6 +95,14 @@ class VictimRepository {
     );
 
     await victims.insertVictim(victim);
+    await journal?.record(
+      entityType: SyncEntityType.victim,
+      entityId: victim.id,
+      operationType: SyncOperationType.create,
+      payload: victimPayload(victim),
+      actorId: createdBy,
+      now: timestamp,
+    );
     return victim;
   }
 
@@ -119,6 +137,14 @@ class VictimRepository {
     );
 
     await victims.updateVictim(updated);
+    await journal?.record(
+      entityType: SyncEntityType.victim,
+      entityId: updated.id,
+      operationType: SyncOperationType.update,
+      payload: victimPayload(updated),
+      actorId: victim.createdBy,
+      now: updated.updatedAt,
+    );
     return updated;
   }
 
@@ -136,6 +162,14 @@ class VictimRepository {
     );
 
     await victims.updateVictim(updated);
+    await journal?.record(
+      entityType: SyncEntityType.victim,
+      entityId: updated.id,
+      operationType: SyncOperationType.update,
+      payload: victimPayload(updated),
+      actorId: victim.createdBy,
+      now: updated.updatedAt,
+    );
     return updated;
   }
 
@@ -153,6 +187,14 @@ class VictimRepository {
     );
 
     await victims.updateVictim(updated);
+    await journal?.record(
+      entityType: SyncEntityType.victim,
+      entityId: updated.id,
+      operationType: SyncOperationType.update,
+      payload: victimPayload(updated),
+      actorId: victim.createdBy,
+      now: updated.updatedAt,
+    );
     return updated;
   }
 

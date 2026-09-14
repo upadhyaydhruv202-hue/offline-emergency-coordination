@@ -2,6 +2,10 @@ import '../../../data/local/daos/responder_status_dao.dart';
 import '../../../domain/entities/responder_status.dart';
 import '../../../domain/entities/responder_status_record.dart';
 import '../../../domain/entities/sync_status.dart';
+import '../../../domain/entities/sync_entity_type.dart';
+import '../../../domain/entities/sync_operation_type.dart';
+import '../../sync/data/entity_payloads.dart';
+import '../../sync/data/sync_journal.dart';
 
 /// How the responder's operational status is read and changed.
 ///
@@ -10,9 +14,10 @@ import '../../../domain/entities/sync_status.dart';
 /// commander can act on, and a responder who has signed in and not said
 /// otherwise is available.
 class ResponderStatusRepository {
-  const ResponderStatusRepository(this.statuses);
+  const ResponderStatusRepository(this.statuses, {this.journal});
 
   final ResponderStatusDao statuses;
+  final SyncJournal? journal;
 
   Stream<ResponderStatus> watchStatus(String responderId) => statuses
       .watchFor(responderId)
@@ -44,6 +49,14 @@ class ResponderStatusRepository {
     );
 
     await statuses.save(record);
+    await journal?.record(
+      entityType: SyncEntityType.responderStatus,
+      entityId: responderId,
+      operationType: SyncOperationType.update,
+      payload: responderStatusPayload(record),
+      actorId: responderId,
+      now: record.updatedAt,
+    );
     return record;
   }
 

@@ -9,6 +9,7 @@ import '../../../domain/entities/hazard_status.dart';
 import '../../../domain/entities/hazard_type.dart';
 import '../../audit/application/audit_providers.dart';
 import '../../field_ops/application/operating_context.dart';
+import '../../sync/application/sync_providers.dart';
 import '../data/hazard_repository.dart';
 import 'hazard_service.dart';
 
@@ -16,6 +17,7 @@ final hazardRepositoryProvider = Provider<HazardRepository>(
   (ref) => HazardRepository(
     hazards: ref.watch(hazardDaoProvider),
     metadata: ref.watch(appMetadataDaoProvider),
+    journal: ref.watch(syncJournalProvider),
   ),
 );
 

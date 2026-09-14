@@ -105,7 +105,7 @@ void main() {
     test('is at version 4 and carries the field-ops tables', () async {
       await database.select(database.appMetadata).get();
 
-      expect(database.schemaVersion, 4);
+      expect(database.schemaVersion, 5);
       expect(
         database.tableNames,
         containsAll(<String>[

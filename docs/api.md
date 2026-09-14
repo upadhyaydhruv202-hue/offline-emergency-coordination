@@ -221,11 +221,16 @@ slice.
 | `GET` | `/api/v1/tasks/board` | bearer | Counts by status. |
 | `POST` / `PATCH` | `/api/v1/tasks` | bearer | Idempotent upload / partial update. |
 | `GET` | `/api/v1/responders` | bearer | Account roster. Read-only. |
+| `GET` | `/api/v1/sync/status` | bearer | Queue counts. Peer ingest, not mesh. |
+| `GET` | `/api/v1/sync/conflicts` | bearer | Recorded conflicts. |
+| `GET` | `/api/v1/sync/demo-scenario` | bearer | Road R-12 development story. |
+| `POST` | `/api/v1/sync/push` | bearer | Idempotent ingest of operations. |
+| `POST` | `/api/v1/sync/pull` | bearer | Operations at or after a logical timestamp. |
 
-`POST` on each upload route is idempotent on the device-minted `id`, the same
-way victim upload is.
+`POST /sync/push` records a conflict when two devices updated the same entity.
+Duplicate `operation_id` values are ignored. Empty payloads are rejected.
 
 ## Not implemented yet
 
-Synchronisation, resources, locations as a PostGIS feed, and the live map.
+Mesh radios, resources, locations as a PostGIS feed, and the live map.
 They arrive with their slices — see [`slices.md`](./slices.md).

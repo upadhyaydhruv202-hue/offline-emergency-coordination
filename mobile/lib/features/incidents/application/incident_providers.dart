@@ -5,6 +5,7 @@ import '../../../domain/entities/incident.dart';
 import '../../audit/application/audit_providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/application/auth_state.dart';
+import '../../sync/application/sync_providers.dart';
 import '../data/incident_repository.dart';
 import 'incident_service.dart';
 
@@ -12,6 +13,7 @@ final incidentRepositoryProvider = Provider<IncidentRepository>(
   (ref) => IncidentRepository(
     incidents: ref.watch(incidentDaoProvider),
     metadata: ref.watch(appMetadataDaoProvider),
+    journal: ref.watch(syncJournalProvider),
   ),
 );
 

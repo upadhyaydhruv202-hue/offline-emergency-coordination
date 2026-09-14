@@ -226,7 +226,7 @@ void main() {
       final database = openTestDatabase();
       addTearDown(database.close);
       await database.select(database.appMetadata).get();
-      expect(database.schemaVersion, 4);
+      expect(database.schemaVersion, 5);
 
       final dao = LocationDao(database);
       await dao.insertLocation(stored(emulator, id: 'mock-1'));

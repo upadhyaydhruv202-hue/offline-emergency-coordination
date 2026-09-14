@@ -85,6 +85,7 @@ IconData hazardTypeIcon(HazardType type) => switch (type) {
       HazardType.fire => Icons.local_fire_department_outlined,
       HazardType.smoke => Icons.cloud_outlined,
       HazardType.roadBlocked => Icons.block_outlined,
+      HazardType.partiallyAccessible => Icons.traffic_outlined,
       HazardType.buildingDamage => Icons.domain_disabled_outlined,
       HazardType.bridgeRisk => Icons.dangerous_outlined,
       HazardType.landslide => Icons.terrain_outlined,

@@ -9,7 +9,8 @@ enum HazardType {
   landslide('LANDSLIDE', 'Landslide'),
   electricalHazard('ELECTRICAL_HAZARD', 'Electrical hazard'),
   chemicalHazard('CHEMICAL_HAZARD', 'Chemical hazard'),
-  other('OTHER', 'Other');
+  other('OTHER', 'Other'),
+  partiallyAccessible('PARTIALLY_ACCESSIBLE', 'Partially accessible');
 
   const HazardType(this.wireValue, this.label);
 

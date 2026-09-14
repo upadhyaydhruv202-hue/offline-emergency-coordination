@@ -42,6 +42,7 @@ class MainShell extends ConsumerWidget {
     AppRoute.sos,
     AppRoute.hazards,
     AppRoute.tasks,
+    AppRoute.sync,
     AppRoute.map,
     AppRoute.profile,
   ];
@@ -229,7 +230,7 @@ class _ShellDrawer extends ConsumerWidget {
             const Padding(
               padding: EdgeInsets.all(16),
               child: Text(
-                'slice-3 · field operations',
+                'slice-4 · local-first sync',
                 style: TextStyle(color: AppColors.ink500, fontSize: 11),
               ),
             ),

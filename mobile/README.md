@@ -112,8 +112,7 @@ lib/
 - Drift schema v2: the `victims` table
 
 Nothing in the victim flow calls the backend. `VictimRepository` has no HTTP
-client and no knowledge that one exists; records are written to SQLite and
-marked `pending`, and Slice 4 will be what finally moves them.
+client; records are written to SQLite and journaled onto the Slice 4 sync queue.
 
 Slice 2 screenshots (`mobile-victims`, `mobile-register`, `mobile-victim-detail`)
 and Slice 3 screenshots (`mobile-home`, `mobile-incidents`, `mobile-sos`,
@@ -133,6 +132,19 @@ and Slice 3 screenshots (`mobile-home`, `mobile-incidents`, `mobile-sos`,
 
 Nothing in these flows calls the backend. `/map` still names the slice that
 delivers it.
+
+**Slice 4 — local-first sync (simulated transport)**
+
+- `SyncJournal` on every operational mutation
+- Persistent device UUID (`device.id`)
+- Drift schema v5: operations, conflicts, entity heads / tombstones
+- Pure-Dart `CrdtEngine` (LWW-register, total order)
+- Sync Center + Road R-12 Device A / Device B demo
+- Copy: SIMULATED SYNC, never "mesh"
+
+```bash
+flutter test test/crdt_engine_test.dart test/road_r12_sync_test.dart
+```
 
 ## Tests
 

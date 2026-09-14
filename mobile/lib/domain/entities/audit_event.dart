@@ -19,7 +19,13 @@ enum AuditEventType {
   taskStarted('TASK_STARTED'),
   taskCompleted('TASK_COMPLETED'),
   responderStatusChanged('RESPONDER_STATUS_CHANGED'),
-  locationCaptured('LOCATION_CAPTURED');
+  locationCaptured('LOCATION_CAPTURED'),
+  syncOperationCreated('SYNC_OPERATION_CREATED'),
+  syncStarted('SYNC_STARTED'),
+  syncCompleted('SYNC_COMPLETED'),
+  conflictDetected('CONFLICT_DETECTED'),
+  conflictResolved('CONFLICT_RESOLVED'),
+  entityConverged('ENTITY_CONVERGED');
 
   const AuditEventType(this.wireValue);
 
@@ -42,7 +48,8 @@ enum AuditEntityType {
   hazard('HAZARD'),
   task('TASK'),
   responder('RESPONDER'),
-  location('LOCATION');
+  location('LOCATION'),
+  sync('SYNC');
 
   const AuditEntityType(this.wireValue);
 

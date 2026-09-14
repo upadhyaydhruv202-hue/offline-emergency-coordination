@@ -70,7 +70,7 @@ void main() {
     test('is at version 4 and still carries the victims table', () async {
       await database.select(database.appMetadata).get();
 
-      expect(database.schemaVersion, 4);
+      expect(database.schemaVersion, 5);
       expect(
         database.tableNames,
         containsAll(<String>['app_metadata', 'local_sessions', 'victims']),

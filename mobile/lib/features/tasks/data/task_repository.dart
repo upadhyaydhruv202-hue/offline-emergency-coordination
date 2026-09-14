@@ -6,6 +6,10 @@ import '../../../data/local/tables/app_metadata.dart';
 import '../../../domain/entities/field_ops_boards.dart';
 import '../../../domain/entities/field_task.dart';
 import '../../../domain/entities/sync_status.dart';
+import '../../../domain/entities/sync_entity_type.dart';
+import '../../../domain/entities/sync_operation_type.dart';
+import '../../sync/data/entity_payloads.dart';
+import '../../sync/data/sync_journal.dart';
 import '../../../domain/entities/task_draft.dart';
 import '../../../domain/entities/task_query.dart';
 import '../../../domain/entities/task_status.dart';
@@ -17,11 +21,15 @@ import '../../../domain/entities/task_status.dart';
 /// version of the same thing: work agreed over the radio that now needs
 /// tracking. Either way the transitions are recorded on the device first.
 class TaskRepository {
-  TaskRepository({required this.tasks, required this.metadata})
-      : _codes = FieldCodeMinter(metadata);
+  TaskRepository({
+    required this.tasks,
+    required this.metadata,
+    this.journal,
+  }) : _codes = FieldCodeMinter(metadata);
 
   final TaskDao tasks;
   final AppMetadataDao metadata;
+  final SyncJournal? journal;
   final FieldCodeMinter _codes;
 
   Stream<List<FieldTask>> watchTasks(TaskQuery query) => tasks.watchTasks(query);
@@ -68,6 +76,14 @@ class TaskRepository {
     );
 
     await tasks.insertTask(task);
+    await journal?.record(
+      entityType: SyncEntityType.task,
+      entityId: task.id,
+      operationType: SyncOperationType.create,
+      payload: taskPayload(task),
+      actorId: createdBy,
+      now: timestamp,
+    );
     return task;
   }
 
@@ -92,6 +108,14 @@ class TaskRepository {
     );
 
     await tasks.updateTask(updated);
+    await journal?.record(
+      entityType: SyncEntityType.task,
+      entityId: updated.id,
+      operationType: SyncOperationType.update,
+      payload: taskPayload(updated),
+      actorId: task.assignedTo ?? 'unknown',
+      now: updated.updatedAt,
+    );
     return updated;
   }
 
@@ -113,6 +137,14 @@ class TaskRepository {
     );
 
     await tasks.updateTask(updated);
+    await journal?.record(
+      entityType: SyncEntityType.task,
+      entityId: updated.id,
+      operationType: SyncOperationType.update,
+      payload: taskPayload(updated),
+      actorId: claimedBy ?? task.assignedTo ?? 'unknown',
+      now: updated.updatedAt,
+    );
     return updated;
   }
 

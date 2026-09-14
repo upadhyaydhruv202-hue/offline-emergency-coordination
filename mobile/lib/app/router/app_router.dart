@@ -20,6 +20,10 @@ import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/sos/presentation/sos_detail_screen.dart';
 import '../../features/sos/presentation/sos_screen.dart';
 import '../../features/splash/splash_screen.dart';
+import '../../features/sync/presentation/sync_center_screen.dart';
+import '../../features/sync/presentation/sync_conflict_detail_screen.dart';
+import '../../features/sync/presentation/sync_conflict_list_screen.dart';
+import '../../features/sync/presentation/sync_pending_screen.dart';
 import '../../features/tasks/presentation/task_create_screen.dart';
 import '../../features/tasks/presentation/task_detail_screen.dart';
 import '../../features/tasks/presentation/tasks_screen.dart';
@@ -47,6 +51,10 @@ const Set<AppRoute> _protectedRoutes = {
   AppRoute.hazardReport,
   AppRoute.tasks,
   AppRoute.taskNew,
+  AppRoute.sync,
+  AppRoute.syncPending,
+  AppRoute.syncConflicts,
+  AppRoute.syncConflictDetail,
   AppRoute.map,
   AppRoute.profile,
 };
@@ -107,6 +115,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoute.tasks.path,
             builder: (context, state) => const TasksScreen(),
+          ),
+          GoRoute(
+            path: AppRoute.sync.path,
+            builder: (context, state) => const SyncCenterScreen(),
           ),
           GoRoute(
             path: AppRoute.profile.path,
@@ -189,6 +201,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoute.taskDetail.path,
         builder: (context, state) => TaskDetailScreen(
           taskId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: AppRoute.syncPending.path,
+        builder: (context, state) => const SyncPendingScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.syncConflicts.path,
+        builder: (context, state) => const SyncConflictListScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.syncConflictDetail.path,
+        builder: (context, state) => SyncConflictDetailScreen(
+          conflictId: state.pathParameters['id']!,
         ),
       ),
     ],

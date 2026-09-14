@@ -7,6 +7,10 @@ import '../../../domain/entities/incident.dart';
 import '../../../domain/entities/incident_draft.dart';
 import '../../../domain/entities/incident_status.dart';
 import '../../../domain/entities/sync_status.dart';
+import '../../../domain/entities/sync_entity_type.dart';
+import '../../../domain/entities/sync_operation_type.dart';
+import '../../sync/data/entity_payloads.dart';
+import '../../sync/data/sync_journal.dart';
 
 /// How an incident comes into existence, changes, and becomes the device's
 /// current operation.
@@ -17,11 +21,15 @@ import '../../../domain/entities/sync_status.dart';
 /// command centre's version of the same event is the synchronisation slice's
 /// job, not a precondition for starting work.
 class IncidentRepository {
-  IncidentRepository({required this.incidents, required this.metadata})
-      : _codes = FieldCodeMinter(metadata);
+  IncidentRepository({
+    required this.incidents,
+    required this.metadata,
+    this.journal,
+  }) : _codes = FieldCodeMinter(metadata);
 
   final IncidentDao incidents;
   final AppMetadataDao metadata;
+  final SyncJournal? journal;
   final FieldCodeMinter _codes;
 
   Stream<List<Incident>> watchIncidents() => incidents.watchIncidents();
@@ -79,6 +87,14 @@ class IncidentRepository {
     );
 
     await incidents.insertIncident(incident);
+    await journal?.record(
+      entityType: SyncEntityType.incident,
+      entityId: incident.id,
+      operationType: SyncOperationType.create,
+      payload: incidentPayload(incident),
+      actorId: createdBy,
+      now: timestamp,
+    );
     return incident;
   }
 
@@ -107,6 +123,14 @@ class IncidentRepository {
     );
 
     await incidents.updateIncident(updated);
+    await journal?.record(
+      entityType: SyncEntityType.incident,
+      entityId: updated.id,
+      operationType: SyncOperationType.update,
+      payload: incidentPayload(updated),
+      actorId: modifiedBy,
+      now: updated.updatedAt,
+    );
     return updated;
   }
 
@@ -124,6 +148,14 @@ class IncidentRepository {
     );
 
     await incidents.updateIncident(updated);
+    await journal?.record(
+      entityType: SyncEntityType.incident,
+      entityId: updated.id,
+      operationType: SyncOperationType.update,
+      payload: incidentPayload(updated),
+      actorId: modifiedBy,
+      now: updated.updatedAt,
+    );
     return updated;
   }
 

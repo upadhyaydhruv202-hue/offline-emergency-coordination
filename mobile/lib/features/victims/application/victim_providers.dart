@@ -15,12 +15,14 @@ import '../../auth/application/auth_state.dart';
 import '../../field_ops/application/operating_context.dart';
 import '../../location/application/location_providers.dart';
 import '../../location/data/location_repository.dart';
+import '../../sync/application/sync_providers.dart';
 import '../data/victim_repository.dart';
 
 final victimRepositoryProvider = Provider<VictimRepository>(
   (ref) => VictimRepository(
     victims: ref.watch(victimDaoProvider),
     metadata: ref.watch(appMetadataDaoProvider),
+    journal: ref.watch(syncJournalProvider),
   ),
 );
 

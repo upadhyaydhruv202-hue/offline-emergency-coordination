@@ -7,18 +7,17 @@ import '../../responder/application/responder_status_providers.dart';
 import '../../sos/application/sos_providers.dart';
 import '../../tasks/application/task_providers.dart';
 import '../../victims/application/victim_providers.dart';
+import 'sync_providers.dart';
 
-/// How many records this device is holding that no peer has confirmed.
+/// Outstanding local mutations.
 ///
-/// There is no synchronisation in this slice, so in practice this is everything
-/// the responder has authored. Showing the number anyway is the point: a
-/// responder must never be left guessing whether what they captured has left the
-/// handset, and a truthful "14 changes pending" is far more use than a hopeful
-/// spinner.
-///
-/// Counted per table from live database queries rather than tracked in a
-/// counter, so it cannot drift away from what is actually stored.
+/// Prefers the Slice 4 sync queue. If the queue is empty (tests that do not
+/// journal, or a fresh device), falls back to counting records still marked
+/// pending on each operational table.
 final pendingChangesProvider = Provider<int>((ref) {
+  final queued = ref.watch(pendingSyncOperationsCountProvider).value;
+  if (queued != null && queued > 0) return queued;
+
   final counts = <int>[
     ref.watch(victimBoardProvider).value?.pendingSync ?? 0,
     ref.watch(hazardBoardProvider).value?.pendingSync ?? 0,

@@ -14,6 +14,10 @@ import '../../domain/entities/responder_role.dart';
 import '../../domain/entities/responder_status.dart';
 import '../../domain/entities/sos_priority.dart';
 import '../../domain/entities/sos_status.dart';
+import '../../domain/entities/conflict_resolution.dart';
+import '../../domain/entities/sync_entity_type.dart';
+import '../../domain/entities/sync_operation_status.dart';
+import '../../domain/entities/sync_operation_type.dart';
 import '../../domain/entities/sync_status.dart';
 import '../../domain/entities/task_priority.dart';
 import '../../domain/entities/task_status.dart';
@@ -28,6 +32,9 @@ import 'tables/local_sessions.dart';
 import 'tables/locations.dart';
 import 'tables/responder_statuses.dart';
 import 'tables/sos_events.dart';
+import 'tables/sync_conflicts.dart';
+import 'tables/sync_entity_heads.dart';
+import 'tables/sync_operations.dart';
 import 'tables/tasks.dart';
 import 'tables/victims.dart';
 
@@ -51,6 +58,9 @@ part 'app_database.g.dart';
     Tasks,
     ResponderStatuses,
     AuditEvents,
+    SyncOperations,
+    SyncConflicts,
+    SyncEntityHeads,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -59,7 +69,7 @@ class AppDatabase extends _$AppDatabase {
   /// Bump by one for every additive migration, and add the matching `from`
   /// branch in [migration]. Never edit a released step.
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -94,6 +104,14 @@ class AppDatabase extends _$AppDatabase {
           if (from < 4) {
             await m.addColumn(locations, locations.provider);
             await m.addColumn(locations, locations.isMocked);
+          }
+
+          // Slice 4: outbound sync queue, recorded conflicts, entity heads /
+          // tombstones. Existing operational rows are unchanged.
+          if (from < 5) {
+            await m.createTable(syncOperations);
+            await m.createTable(syncConflicts);
+            await m.createTable(syncEntityHeads);
           }
         },
         beforeOpen: (OpeningDetails details) async {

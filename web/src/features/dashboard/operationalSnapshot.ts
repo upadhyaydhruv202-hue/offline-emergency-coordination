@@ -1,11 +1,9 @@
 import type { StatusTone } from "../../components/ui/StatusPill";
 
 /**
- * Hard-coded figures that have not yet left this module.
- *
- * Incident, responder, hazard and SOS counts are live from the API. Victim
- * counts already were. Only pending synchronisation remains fabricated: nothing
- * in this slice actually sends a record.
+ * Incident, responder, hazard, SOS and pending-sync counts are live from the API.
+ * Mesh radios are still Slice 5. The sync figure is peer ingest / simulated merge,
+ * not a live mesh.
  */
 
 export interface OperationalMetric {
@@ -18,16 +16,7 @@ export interface OperationalMetric {
   source: string;
 }
 
-export const OPERATIONAL_METRICS: OperationalMetric[] = [
-  {
-    key: "pending-sync",
-    label: "Pending synchronisation",
-    value: 126,
-    caption: "Operations queued on field devices",
-    tone: "info",
-    source: "S4",
-  },
-];
+export const OPERATIONAL_METRICS: OperationalMetric[] = [];
 
 export interface SliceCapability {
   area: string;
@@ -45,6 +34,6 @@ export const CAPABILITY_LEDGER: SliceCapability[] = [
   { area: "Incidents", detail: "Local declaration, current operation, zones", state: "live", slice: "S3" },
   { area: "SOS & hazards", detail: "Local distress calls and hazard reports", state: "live", slice: "S3" },
   { area: "Tasks & responder status", detail: "Local lifecycle and check-in state", state: "live", slice: "S3" },
-  { area: "Peer synchronisation", detail: "CRDT merge, conflict resolution", state: "planned", slice: "S4" },
+  { area: "Peer synchronisation", detail: "Simulated transport, CRDT merge, recorded conflicts", state: "live", slice: "S4" },
   { area: "Mesh transport", detail: "BLE, Wi-Fi Direct, LoRa carriage", state: "planned", slice: "S5" },
 ];
