@@ -292,9 +292,9 @@ Configuration is compile-time, via `--dart-define`:
 ## Tests
 
 ```bash
-cd backend && pytest        # 60 tests
-cd web     && npm test      # 34 tests
-cd mobile  && flutter test  # 79 tests
+cd backend && pytest        # 140 tests
+cd web     && npm test      # 43 tests
+cd mobile  && flutter test  # 94 tests
 ```
 
 | Suite | Tests | Covers |
@@ -304,16 +304,20 @@ cd mobile  && flutter test  # 79 tests
 | `backend/tests/test_roles.py` | 4 | The five roles and `require_roles` |
 | `backend/tests/test_config.py` | 9 | Secret-key and CORS configuration guards |
 | `backend/tests/test_victims.py` | 24 | Upload, idempotent retry, reassessment, ordering, counts, filters |
-| `web/src/app/routing.test.tsx` | 10 | Startup, protected-route redirects |
-| `web/src/app/authenticatedRoutes.test.tsx` | 11 | Session restore, dashboard, live victim counts, placeholders, sign-out |
+| `backend/tests/test_field_operations.py` | 80 | Incidents, hazards, SOS, tasks, responder roster, boards, filters |
+| `web/src/app/routing.test.tsx` | 13 | Startup, protected-route redirects |
+| `web/src/app/authenticatedRoutes.test.tsx` | 14 | Session restore, dashboard, live field-ops pages, placeholders, sign-out |
 | `web/src/features/auth/LoginPage.test.tsx` | 3 | Credential success, rejection, unreachable backend |
 | `web/src/features/victims/VictimsPage.test.tsx` | 10 | Triage counts, roster, ordering, filters, unreachable backend |
-| `mobile/test/app_smoke_test.dart` | 7 | Boots the real app: splash, login, offline demo, home, placeholders, restart |
+| `web/src/features/ops/FieldOpsPages.test.tsx` | 3 | Incident list, empty roster, unreachable backend |
+| `mobile/test/app_smoke_test.dart` | 8 | Boots the real app: splash, login, offline demo, home, SOS live, restart |
 | `mobile/test/local_database_test.dart` | 11 | Drift init, schema, session persistence |
 | `mobile/test/connectivity_test.dart` | 15 | `ONLINE`/`DEGRADED`/`OFFLINE` resolution |
 | `mobile/test/auth_flow_test.dart` | 12 | Offline demo, sign-in, role model, redirect policy |
-| `mobile/test/victim_store_test.dart` | 26 | Schema v2, registration, persistence, reassessment, ordering, filters, counts |
-| `mobile/test/victim_offline_flow_test.dart` | 8 | The whole offline journey through the real app widget |
+| `mobile/test/victim_store_test.dart` | 26 | Schema v3, registration, persistence, reassessment, ordering, filters, counts |
+| `mobile/test/victim_offline_flow_test.dart` | 8 | The whole offline victim journey through the real app widget |
+| `mobile/test/field_ops_store_test.dart` | 13 | Incident, location, SOS, hazard, task, status, audit, victim scoping |
+| `mobile/test/field_ops_offline_flow_test.dart` | 1 | Full field-ops journey with no network, then restart |
 
 The backend suite runs against a temporary SQLite file, and the mobile suite
 against an in-memory SQLite database, so neither needs Docker or PostgreSQL.
@@ -369,12 +373,27 @@ retrying an unconfirmed send cannot duplicate a casualty.
 **Web** — Victims page with counts for every triage category and the casualty
 roster; search and filter; live victim counts on the dashboard.
 
+### Slice 3 — Field operations
+
+**Mobile** — incident declaration and current-operation selection that survives
+restart; manual GPS capture into `locations`; SOS with confirmation and history;
+hazard reporting with filters; task lifecycle; responder status; victims scoped
+to the current incident, responder and last known position; local audit trail;
+Drift schema v3. **No step of this calls the backend.**
+
+**Backend** — `incidents`, `hazards`, `sos_events`, `tasks`; migration
+`0003_field_operations`; list/board/read/upload/patch; responder roster;
+`python -m app.db.seed --field-ops`.
+
+**Web** — Incidents, Responders, Hazards, SOS and Tasks pages; live incident,
+responder and hazard counts on the dashboard. The map stays an honest Slice 5
+placeholder.
+
 ## Deliberately not implemented
 
-SOS, GPS tracking, hazard detection, incident scoping, CRDT synchronisation,
-mesh networking, the Digital Twin, AI, routing, hospital and resource
-management, and advanced security (ZKP, DID, WebAuthn, blockchain, device
-trust).
+CRDT synchronisation, mesh networking, the Digital Twin, AI, live operational
+maps, routing, hospital and resource management, and advanced security (ZKP,
+DID, WebAuthn, blockchain, device trust).
 
 None of it is stubbed or simulated. Every unbuilt module renders a page naming
 the slice that will deliver it. See [`docs/slices.md`](docs/slices.md).
@@ -399,15 +418,11 @@ decision rather than an omission:
   on a cold cache. Subsequent runs are much faster.
 - **Development JWT keys are ephemeral.** With `JWT_SECRET_KEY` blank, restarting
   the backend invalidates every issued token. Set one to avoid this.
-- **Most of the dashboard is still fabricated.** Victim counts are live; the
-  incident, responder, hazard and synchronisation figures are hard-coded in
-  `web/src/features/dashboard/operationalSnapshot.ts` and labelled in the UI.
-- **The command centre only sees uploaded victims.** Since the mobile app does
-  not upload yet, the Victims page is empty until something posts to
-  `POST /api/v1/victims` — `python -m app.db.seed --victims` will. That is the
-  honest state of the system until Slice 4.
-- **The mobile incident is fabricated.** Single constant in
-  `mobile/lib/domain/entities/demo_data.dart`, labelled in the UI.
+- **Pending synchronisation is still fabricated.** Victim, incident, responder
+  and hazard counts are live; the pending-sync tile is hard-coded until Slice 4.
+- **The command centre only sees uploaded records.** The mobile app does not
+  upload yet. `python -m app.db.seed --victims --field-ops` fills the pages for
+  a demo. Empty pages are the honest state until Slice 4.
 - **Vitest uses the `threads` pool.** The default `forks` pool fails to start
   workers when the repository path contains a space.
 

@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
-import '../../../domain/entities/sync_status.dart';
 import '../../../domain/entities/triage_category.dart';
 import '../../../domain/entities/victim.dart';
 import '../../../domain/entities/victim_status.dart';
+import '../../../shared/widgets/detail_row.dart';
 import '../../../shared/widgets/operational_panel.dart';
+import '../../../shared/widgets/ops_visuals.dart';
 import '../../../shared/widgets/status_chip.dart';
+import '../../incidents/application/incident_providers.dart';
 import '../application/victim_providers.dart';
 import 'widgets/triage_selector.dart';
 import 'widgets/victim_visuals.dart';
@@ -44,9 +46,9 @@ class VictimDetailScreen extends ConsumerWidget {
       body: SafeArea(
         child: victim.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => _Message(text: error.toString()),
+          error: (error, _) => CenteredMessage(text: error.toString()),
           data: (record) => record == null
-              ? const _Message(
+              ? const CenteredMessage(
                   text: 'This record is not held on this device.',
                 )
               : _VictimDetail(victim: record),
@@ -96,9 +98,25 @@ class _VictimDetail extends ConsumerWidget {
     );
   }
 
+  /// The incident the casualty was registered under, resolved to something a
+  /// responder recognises rather than a UUID.
+  String _incidentLabel(WidgetRef ref) {
+    final incidentId = victim.incidentId;
+    if (incidentId == null) {
+      return 'Not linked — no incident was selected on this device when the '
+          'casualty was registered';
+    }
+
+    final incident = ref.watch(incidentProvider(incidentId)).value;
+    return incident == null
+        ? incidentId
+        : '${incident.incidentCode} · ${incident.title}';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final severity = triageColor(victim.triageCategory);
+    final position = victim.position;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -122,15 +140,7 @@ class _VictimDetail extends ConsumerWidget {
               color: statusColor(victim.status),
               icon: statusIcon(victim.status),
             ),
-            StatusChip(
-              label: victim.syncStatus == SyncStatus.pending
-                  ? 'SYNC PENDING'
-                  : 'SYNCED',
-              color: victim.syncStatus == SyncStatus.pending
-                  ? AppColors.elevated
-                  : AppColors.nominal,
-              icon: Icons.cloud_upload_outlined,
-            ),
+            SyncStatusChip(victim.syncStatus),
             const StatusChip(
               label: 'LOCAL DATA',
               color: AppColors.accentSoft,
@@ -189,42 +199,45 @@ class _VictimDetail extends ConsumerWidget {
         const SizedBox(height: 24),
         const FieldLabel('Record'),
         const SizedBox(height: 8),
-        _DetailRow(label: 'Field id', value: victim.temporaryId),
-        _DetailRow(label: 'Record id', value: victim.id),
-        _DetailRow(
+        DetailRow(label: 'Field id', value: victim.temporaryId),
+        DetailRow(label: 'Record id', value: victim.id),
+        DetailRow(
           label: 'Age',
           value: victim.age == null
               ? victim.ageGroup.label
               : '${victim.age} · ${victim.ageGroup.label}',
         ),
-        _DetailRow(label: 'Gender', value: victim.gender.label),
-        _DetailRow(
+        DetailRow(label: 'Gender', value: victim.gender.label),
+        DetailRow(
           label: 'Injury',
           value: victim.injuryType ?? 'Not recorded',
         ),
-        _DetailRow(
+        DetailRow(
           label: 'Condition',
           value: victim.medicalCondition ?? 'Not recorded',
         ),
-        _DetailRow(
+        DetailRow(
           label: 'Assistance',
           value: victim.assistanceRequired ?? 'Not recorded',
         ),
-        _DetailRow(
+        DetailRow(label: 'Incident', value: _incidentLabel(ref)),
+        DetailRow(
           label: 'Position',
-          value: victim.hasPosition
-              ? '${victim.latitude}, ${victim.longitude}'
-              : 'Not recorded — positions arrive with the spatial slice',
+          value: position == null
+              ? 'Not recorded — no position had been captured on this device '
+                  'when the casualty was registered'
+              : '${position.latitudeLabel}  ${position.longitudeLabel} · '
+                  'accuracy ${position.accuracyLabel}',
         ),
-        _DetailRow(
+        DetailRow(
           label: 'Registered',
           value: '${victim.createdAt.toIso8601String()} UTC',
         ),
-        _DetailRow(
+        DetailRow(
           label: 'Last updated',
           value: '${victim.updatedAt.toIso8601String()} UTC',
         ),
-        _DetailRow(label: 'Authored by', value: victim.createdBy),
+        DetailRow(label: 'Authored by', value: victim.createdBy),
 
         const SizedBox(height: 22),
         const Text(
@@ -276,62 +289,6 @@ class _ReassessSheet extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 104,
-            child: Text(
-              label,
-              style: const TextStyle(color: AppColors.ink500, fontSize: 12),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.ink200,
-                fontSize: 12,
-                height: 1.45,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Message extends StatelessWidget {
-  const _Message({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.ink400, fontSize: 13),
         ),
       ),
     );

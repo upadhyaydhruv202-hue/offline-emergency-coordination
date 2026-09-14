@@ -84,24 +84,52 @@ Not in this slice, by design: peer synchronisation, position capture, incident
 scoping. A device's records stay on the device until Slice 4 gives them a way
 to travel.
 
-## Slice 3 — Incidents and spatial awareness
+## Slice 3 — Field operations (complete)
 
-- Incident declaration, lifecycle and sector breakdown
-- Responder roster, check-in, task assignment
-- `locations` on PostGIS `geography(Point, 4326)`
-- SOS beacons: raise, relay, acknowledge, stand down
-- Hazard reporting with exclusion radius and expiry
-- Leaflet map in the command centre
-- Offline tile caching on the field device
+A responder operates a real incident offline: declare and adopt it, capture a
+position, raise SOS, report hazards, walk a task through its lifecycle, and
+change their own status. Every write is local SQLite. Nothing is sent.
+
+**Mobile**
+
+- Incident list, declare, detail and current-operation selection (persists)
+- Manual GPS capture via `geolocator`; stored in `locations`
+- SOS with confirmation, history and local resolve
+- Hazard report / list / filters, severity-first
+- Task create / accept / start / complete
+- Responder status on Home
+- Victims inherit current incident, responder and last known position
+- Drift schema v3: `incidents`, `locations`, `sos_events`, `hazards`, `tasks`,
+  `responder_status`, `audit_events` plus `victims.incident_id`
+- Home is the field dashboard: incident, status, location, pending count,
+  quick actions
+- **No step of this calls the backend.**
+
+**Backend**
+
+- `incidents`, `hazards`, `sos_events`, `tasks` tables; Alembic `0003_field_operations`
+- List, board, read, idempotent upload and patch for each
+- `GET /responders` roster (the `users` table)
+- Optional seed: `python -m app.db.seed --field-ops`
+
+**Web**
+
+- Incidents, Responders, Hazards, SOS and Tasks pages
+- Live incident / responder / hazard counts on the dashboard
+- Map remains an honest Slice 5 placeholder
+
+Not in this slice, by design: peer synchronisation, CRDT, mesh, live map,
+automatic SOS transmission.
 
 ## Slice 4 — Synchronisation
 
 - `sync_operations` outbound queue on the device
 - Backend sync endpoint with idempotent, ordered application
 - Deterministic conflict resolution; `sync_conflicts` for human adjudication
-- Append-only `audit_events`
+- Shared `audit_events` between peers
 - Real "pending synchronisation" figure on the dashboard
-- Victims registered offline finally reach the command centre on their own
+- Victims, incidents, SOS, hazards and tasks registered offline finally reach
+  the command centre on their own
 
 ## Slice 5 — Mesh transport
 

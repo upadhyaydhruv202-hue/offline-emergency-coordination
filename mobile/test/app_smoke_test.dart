@@ -6,10 +6,13 @@ import 'package:drp_mobile/data/local/database_providers.dart';
 import 'package:drp_mobile/features/connectivity/connectivity_providers.dart';
 import 'package:drp_mobile/features/connectivity/connectivity_service.dart';
 import 'package:drp_mobile/features/connectivity/connectivity_status.dart';
+import 'package:drp_mobile/features/location/application/location_providers.dart';
+import 'package:drp_mobile/features/location/data/location_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/fake_location.dart';
 import 'helpers/test_database.dart';
 
 /// Boots the real application widget, so this exercises the router, the theme,
@@ -33,6 +36,11 @@ void main() {
       ProviderScope(
         overrides: [
           appDatabaseProvider.overrideWithValue(database),
+          locationServiceProvider.overrideWithValue(
+            LocationService(
+              source: FakeLocationSource(updates: const Stream.empty()),
+            ),
+          ),
           connectivityServiceProvider.overrideWith((ref) {
             final service = ConnectivityService(
               transportSnapshot: () async => transports,
@@ -103,17 +111,17 @@ void main() {
     await enterOfflineDemo(tester, 'Medical Team');
 
     // Panel captions render uppercased, as in the operational specification.
-    expect(find.text('INCIDENT'), findsOneWidget);
-    expect(find.text('Ahmedabad Earthquake Response'), findsOneWidget);
-
-    expect(find.text('ROLE'), findsOneWidget);
-    expect(find.text('Medical Team'), findsOneWidget);
+    expect(find.text('FIELD RESPONDER'), findsOneWidget);
+    expect(find.text('CURRENT INCIDENT'), findsOneWidget);
+    expect(find.text('No current operation'), findsOneWidget);
+    expect(find.text('MEDICAL TEAM'), findsOneWidget);
 
     expect(find.text('CONNECTIVITY'), findsOneWidget);
     expect(find.text('ONLINE'), findsWidgets);
 
-    expect(find.text('LOCAL DATABASE'), findsOneWidget);
     expect(find.text('READY'), findsOneWidget);
+    expect(find.text('CURRENT LOCATION'), findsOneWidget);
+    expect(find.text('RESPONDER STATUS'), findsOneWidget);
 
     await closeApp(tester);
   });
@@ -141,7 +149,7 @@ void main() {
 
     expect(find.text('OFFLINE'), findsWidgets);
     expect(find.text('READY'), findsOneWidget);
-    expect(find.text('Incident Commander'), findsWidgets);
+    expect(find.text('INCIDENT COMMANDER'), findsWidgets);
 
     await closeApp(tester);
   });
@@ -152,14 +160,28 @@ void main() {
     await bootApp(tester);
     await enterOfflineDemo(tester, 'Rescue Team');
 
-    await tester.tap(find.byIcon(Icons.emergency_outlined));
+    await tester.tap(find.byIcon(Icons.map_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.text('COMING IN SLICE 3'), findsOneWidget);
+    expect(find.text('COMING IN SLICE 5'), findsOneWidget);
     expect(
       find.textContaining('Coming in the next development slice'),
       findsOneWidget,
     );
+
+    await closeApp(tester);
+  });
+
+  testWidgets('SOS is a live field module, not a placeholder', (tester) async {
+    await bootApp(tester);
+    await enterOfflineDemo(tester, 'Rescue Team');
+
+    await tester.tap(find.byIcon(Icons.emergency_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CREATE SOS'), findsWidgets);
+    expect(find.text('SOS HISTORY'), findsOneWidget);
+    expect(find.text('COMING IN SLICE 3'), findsNothing);
 
     await closeApp(tester);
   });

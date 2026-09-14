@@ -3,7 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/identifiers.dart';
 import 'app_database.dart';
 import 'daos/app_metadata_dao.dart';
+import 'daos/audit_dao.dart';
+import 'daos/hazard_dao.dart';
+import 'daos/incident_dao.dart';
+import 'daos/location_dao.dart';
+import 'daos/responder_status_dao.dart';
 import 'daos/session_dao.dart';
+import 'daos/sos_dao.dart';
+import 'daos/task_dao.dart';
 import 'daos/victim_dao.dart';
 import 'local_database_health.dart';
 import 'tables/app_metadata.dart';
@@ -27,6 +34,34 @@ final appMetadataDaoProvider = Provider<AppMetadataDao>(
 
 final victimDaoProvider = Provider<VictimDao>(
   (ref) => VictimDao(ref.watch(appDatabaseProvider)),
+);
+
+final incidentDaoProvider = Provider<IncidentDao>(
+  (ref) => IncidentDao(ref.watch(appDatabaseProvider)),
+);
+
+final locationDaoProvider = Provider<LocationDao>(
+  (ref) => LocationDao(ref.watch(appDatabaseProvider)),
+);
+
+final sosDaoProvider = Provider<SosDao>(
+  (ref) => SosDao(ref.watch(appDatabaseProvider)),
+);
+
+final hazardDaoProvider = Provider<HazardDao>(
+  (ref) => HazardDao(ref.watch(appDatabaseProvider)),
+);
+
+final taskDaoProvider = Provider<TaskDao>(
+  (ref) => TaskDao(ref.watch(appDatabaseProvider)),
+);
+
+final responderStatusDaoProvider = Provider<ResponderStatusDao>(
+  (ref) => ResponderStatusDao(ref.watch(appDatabaseProvider)),
+);
+
+final auditDaoProvider = Provider<AuditDao>(
+  (ref) => AuditDao(ref.watch(appDatabaseProvider)),
 );
 
 /// Opens the datastore, mints the device identifier on first run, and reports

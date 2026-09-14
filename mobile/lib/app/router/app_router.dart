@@ -6,10 +6,23 @@ import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/application/auth_state.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/role_screen.dart';
+import '../../features/hazards/presentation/hazard_detail_screen.dart';
+import '../../features/hazards/presentation/hazard_edit_screen.dart';
+import '../../features/hazards/presentation/hazard_report_screen.dart';
+import '../../features/hazards/presentation/hazards_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/incidents/presentation/incident_declare_screen.dart';
+import '../../features/incidents/presentation/incident_detail_screen.dart';
+import '../../features/incidents/presentation/incident_edit_screen.dart';
+import '../../features/incidents/presentation/incidents_screen.dart';
 import '../../features/placeholder/placeholder_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/sos/presentation/sos_detail_screen.dart';
+import '../../features/sos/presentation/sos_screen.dart';
 import '../../features/splash/splash_screen.dart';
+import '../../features/tasks/presentation/task_create_screen.dart';
+import '../../features/tasks/presentation/task_detail_screen.dart';
+import '../../features/tasks/presentation/tasks_screen.dart';
 import '../../features/victims/presentation/victim_detail_screen.dart';
 import '../../features/victims/presentation/victim_edit_screen.dart';
 import '../../features/victims/presentation/victim_register_screen.dart';
@@ -26,11 +39,14 @@ const Set<AppRoute> _protectedRoutes = {
   AppRoute.role,
   AppRoute.home,
   AppRoute.incidents,
+  AppRoute.incidentNew,
   AppRoute.victims,
   AppRoute.victimRegister,
   AppRoute.sos,
   AppRoute.hazards,
+  AppRoute.hazardReport,
   AppRoute.tasks,
+  AppRoute.taskNew,
   AppRoute.map,
   AppRoute.profile,
 };
@@ -73,8 +89,24 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const HomeScreen(),
           ),
           GoRoute(
+            path: AppRoute.incidents.path,
+            builder: (context, state) => const IncidentsScreen(),
+          ),
+          GoRoute(
             path: AppRoute.victims.path,
             builder: (context, state) => const VictimsScreen(),
+          ),
+          GoRoute(
+            path: AppRoute.sos.path,
+            builder: (context, state) => const SosScreen(),
+          ),
+          GoRoute(
+            path: AppRoute.hazards.path,
+            builder: (context, state) => const HazardsScreen(),
+          ),
+          GoRoute(
+            path: AppRoute.tasks.path,
+            builder: (context, state) => const TasksScreen(),
           ),
           GoRoute(
             path: AppRoute.profile.path,
@@ -88,9 +120,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // Outside the shell: a form and a casualty record are full-screen tasks
-      // that are pushed and popped, not navigation destinations. `new` is
+      // Outside the shell: a form and an individual record are full-screen
+      // tasks that are pushed and popped, not navigation destinations. `new` is
       // declared before `:id` so it is not swallowed by the parameter.
+      GoRoute(
+        path: AppRoute.incidentNew.path,
+        builder: (context, state) => const IncidentDeclareScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.incidentDetail.path,
+        builder: (context, state) => IncidentDetailScreen(
+          incidentId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: AppRoute.incidentEdit.path,
+        builder: (context, state) => IncidentEditScreen(
+          incidentId: state.pathParameters['id']!,
+        ),
+      ),
+
       GoRoute(
         path: AppRoute.victimRegister.path,
         builder: (context, state) => const VictimRegisterScreen(),
@@ -105,6 +154,41 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoute.victimEdit.path,
         builder: (context, state) => VictimEditScreen(
           victimId: state.pathParameters['id']!,
+        ),
+      ),
+
+      GoRoute(
+        path: AppRoute.sosDetail.path,
+        builder: (context, state) => SosDetailScreen(
+          sosId: state.pathParameters['id']!,
+        ),
+      ),
+
+      GoRoute(
+        path: AppRoute.hazardReport.path,
+        builder: (context, state) => const HazardReportScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.hazardDetail.path,
+        builder: (context, state) => HazardDetailScreen(
+          hazardId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: AppRoute.hazardEdit.path,
+        builder: (context, state) => HazardEditScreen(
+          hazardId: state.pathParameters['id']!,
+        ),
+      ),
+
+      GoRoute(
+        path: AppRoute.taskNew.path,
+        builder: (context, state) => const TaskCreateScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.taskDetail.path,
+        builder: (context, state) => TaskDetailScreen(
+          taskId: state.pathParameters['id']!,
         ),
       ),
     ],
@@ -150,49 +234,8 @@ AppRoute? _routeFor(String location) {
 /// The modules that are routed but not yet built.
 const List<PlaceholderSpec> _placeholderRoutes = [
   PlaceholderSpec(
-    route: AppRoute.incidents,
-    slice: 3,
-    summary:
-        'Declaring an incident and scoping every record captured on this device to it.',
-    scope: [
-      'Incident declaration and lifecycle',
-      'Sector assignment for this device',
-      'Command structure and reporting lines',
-    ],
-  ),
-  PlaceholderSpec(
-    route: AppRoute.sos,
-    slice: 3,
-    summary: 'Raising and relaying distress beacons, including for other teams.',
-    scope: [
-      'One-touch responder SOS',
-      'Relay of beacons received from nearby devices',
-      'Acknowledgement and stand-down',
-    ],
-  ),
-  PlaceholderSpec(
-    route: AppRoute.hazards,
-    slice: 3,
-    summary: 'Recording hazards so other teams are warned before they arrive.',
-    scope: [
-      'Structural, gas, flood and electrical hazards',
-      'Exclusion radius and expiry',
-      'Propagation to nearby devices',
-    ],
-  ),
-  PlaceholderSpec(
-    route: AppRoute.tasks,
-    slice: 4,
-    summary: 'The work assigned to this responder, and its acknowledgement.',
-    scope: [
-      'Task assignment and acceptance',
-      'Progress and completion evidence',
-      'Reassignment when a team is redirected',
-    ],
-  ),
-  PlaceholderSpec(
     route: AppRoute.map,
-    slice: 3,
+    slice: 5,
     summary: 'An offline map of the sector with responders, victims and hazards.',
     scope: [
       'Cached tiles for use with no network',

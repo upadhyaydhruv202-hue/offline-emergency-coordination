@@ -6,6 +6,7 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/config/app_config.dart';
 import '../../../data/local/database_providers.dart';
+import '../../location/application/location_providers.dart';
 import '../../../shared/widgets/status_chip.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/application/auth_state.dart';
@@ -96,6 +97,27 @@ class ProfileScreen extends ConsumerWidget {
           value: health == null ? 'unknown' : health.tables.join(', '),
         ),
         _DetailRow(label: 'Backend', value: AppConfig.apiBaseUrl),
+
+        const SizedBox(height: 20),
+        const FieldLabel('Developer'),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text(
+            'Allow mock GPS',
+            style: TextStyle(color: AppColors.ink200, fontSize: 14),
+          ),
+          subtitle: const Text(
+            'Explicit DEMO MODE for emulator/mock locations. Off by default. '
+            'Mock coordinates are never labelled LIVE GPS.',
+            style: TextStyle(color: AppColors.ink500, fontSize: 11, height: 1.4),
+          ),
+          value: ref.watch(locationAllowMockProvider).value ?? false,
+          onChanged: (value) => ref.read(appMetadataDaoProvider).write(
+                locationAllowMockKey,
+                value ? 'true' : 'false',
+              ),
+        ),
 
         const SizedBox(height: 28),
         OutlinedButton.icon(

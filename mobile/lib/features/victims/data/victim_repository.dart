@@ -2,6 +2,7 @@ import '../../../core/utils/identifiers.dart';
 import '../../../data/local/daos/app_metadata_dao.dart';
 import '../../../data/local/daos/victim_dao.dart';
 import '../../../data/local/tables/app_metadata.dart';
+import '../../../domain/entities/location_fix.dart';
 import '../../../domain/entities/sync_status.dart';
 import '../../../domain/entities/triage_category.dart';
 import '../../../domain/entities/victim.dart';
@@ -44,9 +45,17 @@ class VictimRepository {
       victims.readVictims(query);
 
   /// Writes a new victim to the device and returns the stored record.
+  ///
+  /// [incidentId] and [position] are the operational context the device already
+  /// holds, not extra questions asked of the responder. Both are optional: a
+  /// casualty registered before an incident was declared, or in a stairwell
+  /// with no fix, is still a casualty, and refusing the record would be the
+  /// worst possible response to missing metadata.
   Future<Victim> register({
     required VictimDraft draft,
     required String createdBy,
+    String? incidentId,
+    LocationFix? position,
     DateTime? now,
   }) async {
     final timestamp = (now ?? DateTime.now()).toUtc();
@@ -64,6 +73,10 @@ class VictimRepository {
       priority: draft.triageCategory.priority,
       assistanceRequired: _clean(draft.assistanceRequired),
       status: draft.status,
+      incidentId: incidentId,
+      latitude: position?.latitude,
+      longitude: position?.longitude,
+      locationAccuracy: position?.accuracy,
       createdAt: timestamp,
       updatedAt: timestamp,
       createdBy: createdBy,

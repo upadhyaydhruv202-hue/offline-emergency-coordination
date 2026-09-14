@@ -14,6 +14,11 @@ from app.db.session import get_session
 from app.models.enums import UserRole
 from app.models.user import User
 from app.services.auth_service import AuthService
+from app.services.hazard_service import HazardService
+from app.services.incident_service import IncidentService
+from app.services.responder_service import ResponderService
+from app.services.sos_service import SosService
+from app.services.task_service import TaskService
 from app.services.victim_service import VictimService
 
 bearer_scheme = HTTPBearer(auto_error=False, description="JWT access token")
@@ -33,6 +38,41 @@ def get_victim_service(session: DbSession) -> VictimService:
 
 
 VictimServiceDep = Annotated[VictimService, Depends(get_victim_service)]
+
+
+def get_incident_service(session: DbSession) -> IncidentService:
+    return IncidentService(session)
+
+
+IncidentServiceDep = Annotated[IncidentService, Depends(get_incident_service)]
+
+
+def get_hazard_service(session: DbSession) -> HazardService:
+    return HazardService(session)
+
+
+HazardServiceDep = Annotated[HazardService, Depends(get_hazard_service)]
+
+
+def get_sos_service(session: DbSession) -> SosService:
+    return SosService(session)
+
+
+SosServiceDep = Annotated[SosService, Depends(get_sos_service)]
+
+
+def get_task_service(session: DbSession) -> TaskService:
+    return TaskService(session)
+
+
+TaskServiceDep = Annotated[TaskService, Depends(get_task_service)]
+
+
+def get_responder_service(session: DbSession) -> ResponderService:
+    return ResponderService(session)
+
+
+ResponderServiceDep = Annotated[ResponderService, Depends(get_responder_service)]
 
 
 def get_current_user(

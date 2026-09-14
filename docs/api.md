@@ -198,7 +198,34 @@ Every failure uses one envelope:
 | `service_unavailable` | 503 | A dependency is down. |
 | `internal_error` | 500 | Unexpected. Logged with a stack trace; the response body never leaks internals. |
 
+## Field operations
+
+These endpoints serve the command centre and receive uploads. **They are not on
+the critical path for a responder.** The mobile app does not call them in this
+slice.
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/incidents` | bearer | Roster, most recent first. |
+| `GET` | `/api/v1/incidents/board` | bearer | Counts by status. |
+| `GET` | `/api/v1/incidents/{id}` | bearer | One incident. |
+| `POST` | `/api/v1/incidents` | bearer | Idempotent upload of a device-declared incident. |
+| `PATCH` | `/api/v1/incidents/{id}` | bearer | Partial update. |
+| `GET` | `/api/v1/hazards` | bearer | Roster, most severe first. `type`, `severity`, `status`. |
+| `GET` | `/api/v1/hazards/board` | bearer | Counts by severity and status. |
+| `POST` / `PATCH` | `/api/v1/hazards` | bearer | Idempotent upload / partial update. |
+| `GET` | `/api/v1/sos` | bearer | Queue, most urgent first. |
+| `GET` | `/api/v1/sos/board` | bearer | Counts by priority and status. |
+| `POST` / `PATCH` | `/api/v1/sos` | bearer | Idempotent upload / partial update. |
+| `GET` | `/api/v1/tasks` | bearer | Board, highest priority first. |
+| `GET` | `/api/v1/tasks/board` | bearer | Counts by status. |
+| `POST` / `PATCH` | `/api/v1/tasks` | bearer | Idempotent upload / partial update. |
+| `GET` | `/api/v1/responders` | bearer | Account roster. Read-only. |
+
+`POST` on each upload route is idempotent on the device-minted `id`, the same
+way victim upload is.
+
 ## Not implemented yet
 
-Incidents, SOS, hazards, tasks, resources, locations and the synchronisation
-endpoint. They arrive with their slices — see [`slices.md`](./slices.md).
+Synchronisation, resources, locations as a PostGIS feed, and the live map.
+They arrive with their slices — see [`slices.md`](./slices.md).

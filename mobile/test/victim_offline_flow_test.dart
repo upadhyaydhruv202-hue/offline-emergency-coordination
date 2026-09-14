@@ -6,6 +6,8 @@ import 'package:drp_mobile/data/local/database_providers.dart';
 import 'package:drp_mobile/features/connectivity/connectivity_providers.dart';
 import 'package:drp_mobile/features/connectivity/connectivity_service.dart';
 import 'package:drp_mobile/features/connectivity/connectivity_status.dart';
+import 'package:drp_mobile/features/location/application/location_providers.dart';
+import 'package:drp_mobile/features/location/data/location_service.dart';
 import 'package:drp_mobile/features/victims/presentation/victim_detail_screen.dart';
 import 'package:drp_mobile/features/victims/presentation/widgets/triage_selector.dart';
 import 'package:drp_mobile/features/victims/presentation/widgets/victim_form.dart';
@@ -13,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/fake_location.dart';
 import 'helpers/test_database.dart';
 
 /// The Slice 2 acceptance run, driven through the real application widget.
@@ -33,6 +36,11 @@ void main() {
       ProviderScope(
         overrides: [
           appDatabaseProvider.overrideWithValue(database),
+          locationServiceProvider.overrideWithValue(
+            LocationService(
+              source: FakeLocationSource(updates: const Stream.empty()),
+            ),
+          ),
           connectivityServiceProvider.overrideWith((ref) {
             final service = ConnectivityService(
               transportSnapshot: () async => const {ConnectivityTransport.none},
@@ -302,7 +310,7 @@ void main() {
     }
 
     expect(find.text('4 shown · 4 on this device'), findsOneWidget);
-    expect(find.text('4 SYNC PENDING'), findsOneWidget);
+    expect(find.text('4 CHANGES PENDING'), findsOneWidget);
 
     // Critical is listed first regardless of the order they were entered in.
     final rendered = tester

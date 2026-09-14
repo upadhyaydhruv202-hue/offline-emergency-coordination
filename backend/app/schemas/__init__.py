@@ -1,5 +1,44 @@
 from app.schemas.auth import LoginRequest, LoginResponse, RefreshRequest, TokenPair
+from app.schemas.hazard import (
+    HazardBase,
+    HazardBoard,
+    HazardCreate,
+    HazardPage,
+    HazardRead,
+    HazardSeverityCounts,
+    HazardStatusCounts,
+    HazardUpdate,
+)
 from app.schemas.health import DatabaseHealthResponse, HealthResponse
+from app.schemas.incident import (
+    IncidentBase,
+    IncidentBoard,
+    IncidentCreate,
+    IncidentPage,
+    IncidentRead,
+    IncidentStatusCounts,
+    IncidentUpdate,
+)
+from app.schemas.responder import ResponderPage
+from app.schemas.sos_event import (
+    SosBoard,
+    SosEventBase,
+    SosEventCreate,
+    SosEventPage,
+    SosEventRead,
+    SosEventUpdate,
+    SosPriorityCounts,
+    SosStatusCounts,
+)
+from app.schemas.task import (
+    TaskBase,
+    TaskBoard,
+    TaskCreate,
+    TaskPage,
+    TaskRead,
+    TaskStatusCounts,
+    TaskUpdate,
+)
 from app.schemas.user import UserBase, UserCreate, UserRead
 from app.schemas.victim import (
     TriageCounts,
@@ -13,10 +52,41 @@ from app.schemas.victim import (
 
 __all__ = [
     "DatabaseHealthResponse",
+    "HazardBase",
+    "HazardBoard",
+    "HazardCreate",
+    "HazardPage",
+    "HazardRead",
+    "HazardSeverityCounts",
+    "HazardStatusCounts",
+    "HazardUpdate",
     "HealthResponse",
+    "IncidentBase",
+    "IncidentBoard",
+    "IncidentCreate",
+    "IncidentPage",
+    "IncidentRead",
+    "IncidentStatusCounts",
+    "IncidentUpdate",
     "LoginRequest",
     "LoginResponse",
     "RefreshRequest",
+    "ResponderPage",
+    "SosBoard",
+    "SosEventBase",
+    "SosEventCreate",
+    "SosEventPage",
+    "SosEventRead",
+    "SosEventUpdate",
+    "SosPriorityCounts",
+    "SosStatusCounts",
+    "TaskBase",
+    "TaskBoard",
+    "TaskCreate",
+    "TaskPage",
+    "TaskRead",
+    "TaskStatusCounts",
+    "TaskUpdate",
     "TokenPair",
     "TriageCounts",
     "UserBase",

@@ -33,15 +33,27 @@ void main() {
       // Any query forces the migration to run.
       await database.select(database.appMetadata).get();
 
-      expect(database.schemaVersion, 2);
+      expect(database.schemaVersion, 4);
     });
 
-    test('creates the Slice 1 tables', () async {
+    test('creates the Slice 1 tables and the later operational tables',
+        () async {
       await database.select(database.appMetadata).get();
 
       expect(
         database.tableNames,
-        containsAll(<String>['app_metadata', 'local_sessions']),
+        containsAll(<String>[
+          'app_metadata',
+          'local_sessions',
+          'victims',
+          'incidents',
+          'locations',
+          'sos_events',
+          'hazards',
+          'tasks',
+          'responder_status',
+          'audit_events',
+        ]),
       );
     });
 

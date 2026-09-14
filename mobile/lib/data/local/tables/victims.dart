@@ -43,10 +43,19 @@ class Victims extends Table {
 
   TextColumn get status => textEnum<VictimStatus>()();
 
-  /// Reserved for the spatial slice. Slice 2 records no position.
+  /// The incident the casualty was registered under, when the device had
+  /// adopted one. Nullable because a record authored before an incident was
+  /// declared must not be rejected — a casualty in front of you outranks
+  /// bookkeeping.
+  TextColumn get incidentId => text().withLength(max: 64).nullable()();
+
+  /// Position at the moment of registration, taken from the device's own
+  /// receiver. Null on records written by Slice 2, which captured no position.
   RealColumn get latitude => real().nullable()();
 
   RealColumn get longitude => real().nullable()();
+
+  RealColumn get locationAccuracy => real().nullable()();
 
   DateTimeColumn get createdAt => dateTime()();
 

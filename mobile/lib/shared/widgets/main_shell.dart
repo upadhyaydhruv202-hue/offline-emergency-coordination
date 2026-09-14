@@ -8,6 +8,8 @@ import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/application/auth_state.dart';
 import '../../features/connectivity/connectivity_providers.dart';
 import '../../features/connectivity/connectivity_status.dart';
+import '../../features/location/application/location_providers.dart';
+import '../../features/sync/application/pending_changes_provider.dart';
 
 /// Chrome shared by every in-session screen: title bar, connectivity readout,
 /// drawer and bottom navigation.
@@ -49,6 +51,8 @@ class MainShell extends ConsumerWidget {
     final currentRoute = _routeFor(location);
     final connectivity = ref.watch(connectivityStatusProvider);
     final status = connectivity.value;
+    final pending = ref.watch(pendingChangesProvider);
+    ref.watch(locationSessionProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -57,7 +61,7 @@ class MainShell extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Center(
-              child: _ConnectivityIndicator(status: status),
+              child: _ConnectivityIndicator(status: status, pending: pending),
             ),
           ),
         ],
@@ -93,9 +97,10 @@ class MainShell extends ConsumerWidget {
 }
 
 class _ConnectivityIndicator extends StatelessWidget {
-  const _ConnectivityIndicator({required this.status});
+  const _ConnectivityIndicator({required this.status, required this.pending});
 
   final ConnectivityStatus? status;
+  final int pending;
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +124,9 @@ class _ConnectivityIndicator extends StatelessWidget {
     };
 
     return Semantics(
-      label: 'Connectivity $label',
+      label: pending == 0
+          ? 'Connectivity $label'
+          : 'Connectivity $label, $pending changes pending',
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -134,6 +141,17 @@ class _ConnectivityIndicator extends StatelessWidget {
               letterSpacing: 0.8,
             ),
           ),
+          if (pending > 0) ...[
+            const SizedBox(width: 8),
+            Text(
+              '$pending',
+              style: const TextStyle(
+                color: AppColors.elevated,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -211,7 +229,7 @@ class _ShellDrawer extends ConsumerWidget {
             const Padding(
               padding: EdgeInsets.all(16),
               child: Text(
-                'slice-2 · victims and triage',
+                'slice-3 · field operations',
                 style: TextStyle(color: AppColors.ink500, fontSize: 11),
               ),
             ),

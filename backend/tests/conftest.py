@@ -30,6 +30,10 @@ from app.db.session import SessionFactory, engine  # noqa: E402
 from app.main import create_app  # noqa: E402
 from app.models.base import Base  # noqa: E402
 from app.models.enums import UserRole  # noqa: E402
+from app.models.hazard import Hazard  # noqa: E402
+from app.models.incident import Incident  # noqa: E402
+from app.models.sos_event import SosEvent  # noqa: E402
+from app.models.task import Task  # noqa: E402
 from app.models.user import User  # noqa: E402
 from app.models.victim import Victim  # noqa: E402
 from app.schemas.user import UserCreate  # noqa: E402
@@ -55,6 +59,12 @@ def session() -> Iterator[Session]:
 @pytest.fixture(autouse=True)
 def _clean_tables(session: Session) -> Iterator[None]:
     yield
+    # Children before parents, so the foreign keys to ``incidents`` hold on a
+    # backend that enforces them.
+    session.query(Hazard).delete()
+    session.query(SosEvent).delete()
+    session.query(Task).delete()
+    session.query(Incident).delete()
     session.query(Victim).delete()
     session.query(User).delete()
     session.commit()

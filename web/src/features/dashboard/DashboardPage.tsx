@@ -1,8 +1,14 @@
+import { useCallback } from "react";
 import { Panel } from "../../components/ui/Panel";
 import { DemoDataNotice } from "../../components/ui/DemoDataNotice";
 import { StatusPill } from "../../components/ui/StatusPill";
 import { ROLE_LABELS } from "../../lib/api/auth";
+import { fetchHazardBoard } from "../../lib/api/hazards";
+import { fetchIncidentBoard } from "../../lib/api/incidents";
+import { fetchResponders } from "../../lib/api/responders";
+import { fetchSosBoard } from "../../lib/api/sos";
 import { useAuth } from "../auth/useAuth";
+import { useBoard } from "../ops/useOperationalQuery";
 import { useVictimBoard } from "../victims/useVictims";
 import { MetricTile, Tile } from "./MetricTile";
 import { CAPABILITY_LEDGER, OPERATIONAL_METRICS } from "./operationalSnapshot";
@@ -10,6 +16,12 @@ import { CAPABILITY_LEDGER, OPERATIONAL_METRICS } from "./operationalSnapshot";
 export function DashboardPage() {
   const { user } = useAuth();
   const board = useVictimBoard();
+  const incidents = useBoard(useCallback(fetchIncidentBoard, []));
+  const hazards = useBoard(useCallback(fetchHazardBoard, []));
+  const sos = useBoard(useCallback(fetchSosBoard, []));
+  const responders = useBoard(
+    useCallback((token: string, signal: AbortSignal) => fetchResponders(token, {}, signal), []),
+  );
 
   return (
     <div className="mx-auto max-w-7xl space-y-5">
@@ -20,12 +32,13 @@ export function DashboardPage() {
             Signed in as {user?.full_name} · {user ? ROLE_LABELS[user.role] : ""}
           </p>
         </div>
-        <StatusPill tone="info">Slice 2 — victims and triage</StatusPill>
+        <StatusPill tone="info">Slice 3 — field operations</StatusPill>
       </div>
 
       <DemoDataNotice>
-        incident, responder and synchronisation figures are hard-coded. Victim counts are live from
-        the coordination backend.
+        the pending-synchronisation figure is hard-coded. Victim, incident, responder, hazard and
+        SOS counts are live from the coordination backend. Field devices do not upload yet, so
+        those pages may honestly be empty.
       </DemoDataNotice>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -40,6 +53,28 @@ export function DashboardPage() {
           value={board?.by_triage.critical ?? "—"}
           caption="Immediate, life threatening"
           tone="critical"
+        />
+        <Tile
+          label="Active incidents"
+          value={incidents?.by_status.active ?? "—"}
+          caption={incidents ? `${incidents.total} uploaded` : "No uplink"}
+          tone="high"
+        />
+        <Tile
+          label="Active responders"
+          value={responders?.total ?? "—"}
+          caption="Accounts that can hold a field device"
+          tone="nominal"
+        />
+        <Tile
+          label="Active hazards"
+          value={
+            hazards
+              ? hazards.by_status.reported + hazards.by_status.verified
+              : "—"
+          }
+          caption={sos ? `${sos.by_status.created + sos.by_status.acknowledged} open SOS` : "No uplink"}
+          tone="elevated"
         />
         {OPERATIONAL_METRICS.map((metric) => (
           <MetricTile key={metric.key} metric={metric} />
@@ -106,7 +141,7 @@ export function DashboardPage() {
                   <span className="text-ink-500 tabular-nums">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <span className={index < 2 ? "text-nominal" : undefined}>{stage}</span>
+                  <span className={index < 3 ? "text-nominal" : undefined}>{stage}</span>
                 </li>
               ))}
             </ol>

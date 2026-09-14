@@ -2,14 +2,17 @@ import { Navigate, type RouteObject } from "react-router-dom";
 import { CommandShell } from "../components/layout/CommandShell";
 import { LoginPage } from "../features/auth/LoginPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
+import { HazardsPage } from "../features/hazards/HazardsPage";
+import { IncidentsPage } from "../features/incidents/IncidentsPage";
 import {
-  IncidentsPage,
   MapPage,
   NotFoundPage,
   ResourcesPage,
-  RespondersPage,
   SettingsPage,
 } from "../features/placeholders/pages";
+import { RespondersPage } from "../features/responders/RespondersPage";
+import { SosPage } from "../features/sos/SosPage";
+import { TasksPage } from "../features/tasks/TasksPage";
 import { VictimsPage } from "../features/victims/VictimsPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 
@@ -27,6 +30,9 @@ export const routes: RouteObject[] = [
           { path: "incidents", element: <IncidentsPage /> },
           { path: "responders", element: <RespondersPage /> },
           { path: "victims", element: <VictimsPage /> },
+          { path: "hazards", element: <HazardsPage /> },
+          { path: "sos", element: <SosPage /> },
+          { path: "tasks", element: <TasksPage /> },
           { path: "map", element: <MapPage /> },
           { path: "resources", element: <ResourcesPage /> },
           { path: "settings", element: <SettingsPage /> },

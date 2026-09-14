@@ -6,6 +6,7 @@ import '../../../../domain/entities/triage_category.dart';
 import '../../../../domain/entities/victim_demographics.dart';
 import '../../../../domain/entities/victim_draft.dart';
 import '../../../../domain/entities/victim_status.dart';
+import '../../../../shared/widgets/form_failure.dart';
 import '../../../../shared/widgets/status_chip.dart';
 import 'triage_selector.dart';
 
@@ -256,7 +257,7 @@ class _VictimFormState extends State<VictimForm> {
 
           if (_failure != null) ...[
             const SizedBox(height: 16),
-            _FormFailure(message: _failure!),
+            FormFailure(message: _failure!),
           ],
 
           const SizedBox(height: 24),
@@ -282,41 +283,6 @@ class _VictimFormState extends State<VictimForm> {
               color: AppColors.ink500,
               fontSize: 11,
               height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FormFailure extends StatelessWidget {
-  const _FormFailure({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.critical.withValues(alpha: 0.1),
-        border: Border.all(color: AppColors.critical.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.error_outline, size: 16, color: AppColors.critical),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: AppColors.critical,
-                fontSize: 12,
-                height: 1.45,
-              ),
             ),
           ),
         ],

@@ -1,42 +1,10 @@
 import { PlaceholderPage } from "./PlaceholderPage";
 
-export function IncidentsPage() {
-  return (
-    <PlaceholderPage
-      title="Incidents"
-      slice="3"
-      summary="Declaring an incident, setting its command structure and scoping every downstream record to it."
-      scope={[
-        "Incident declaration, severity and lifecycle state",
-        "Sector and sub-sector breakdown",
-        "Assignment of an incident commander",
-        "Scoping of victims, tasks and resources to an incident",
-      ]}
-    />
-  );
-}
-
-export function RespondersPage() {
-  return (
-    <PlaceholderPage
-      title="Responders"
-      slice="3"
-      summary="The roster of teams and volunteers checked in to an incident, with their assignments."
-      scope={[
-        "Team composition and check-in / check-out",
-        "Skill and equipment attributes",
-        "Task assignment and acknowledgement",
-        "Last-known position and reporting interval",
-      ]}
-    />
-  );
-}
-
 export function MapPage() {
   return (
     <PlaceholderPage
       title="Operational map"
-      slice="3"
+      slice="5"
       summary="A Leaflet map over PostGIS geometry showing responders, victims, hazards and sectors."
       scope={[
         "Responder and victim positions",

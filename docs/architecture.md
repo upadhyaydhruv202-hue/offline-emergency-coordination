@@ -15,7 +15,7 @@ FIELD DEVICE
     ↓
 LOCAL DATABASE            ← Slice 1 (implemented)
     ↓
-LOCAL OPERATIONAL STATE   ← Slice 2 (implemented: victims and triage)
+LOCAL OPERATIONAL STATE   ← Slice 2–3 (implemented: victims, incidents, SOS, hazards, tasks)
     ↓
 PEER SYNCHRONISATION
     ↓
@@ -100,7 +100,9 @@ the sync layer insertable later without rewriting the UI.
 `pgcrypto` and `pg_trgm` are installed at first boot because enabling an
 extension later needs superuser rights the application role will not hold.
 
-**Mobile (SQLite, schema v2)** — `app_metadata`, `local_sessions`, `victims`.
+**Mobile (SQLite, schema v3)** — `app_metadata`, `local_sessions`, `victims`,
+`incidents`, `locations`, `sos_events`, `hazards`, `tasks`, `responder_status`,
+`audit_events`.
 
 The two `victims` tables carry the same fields under the same names, because a
 device's row is uploaded verbatim in Slice 4. Both key on the UUID the device
@@ -115,21 +117,21 @@ Planned tables and the slice that introduces them:
 
 | Table | Slice | Notes |
 | --- | --- | --- |
-| `incidents` | 3 | Scope for every other operational record. |
-| `responders` | 3 | Roster, check-in, assignment. |
-| `tasks` | 3 | Work assigned to a responder. |
-| `triage_records` | 3 | Append-only reassessment history. |
-| `sos_events` | 3 | Distress beacons, relayed between devices. |
-| `hazards` | 3 | Zones with an exclusion radius and expiry. |
-| `locations` | 3 | PostGIS `geography(Point, 4326)` on the server. |
+| `incidents` | 3 | Scope for every other operational record. Implemented. |
+| `tasks` | 3 | Work a responder holds. Implemented. |
+| `sos_events` | 3 | Local distress calls. Implemented. |
+| `hazards` | 3 | Local hazard reports. Implemented. |
+| `locations` | 3 | Device GPS fixes. Implemented on the handset. |
+| `responder_status` | 3 | One current status per responder, on the device. |
+| `audit_events` | 3 | Lightweight local trail. Shared peer log is Slice 4. |
 | `sync_operations` | 4 | The outbound queue; the unit of synchronisation. |
 | `sync_conflicts` | 4 | Divergences a human must adjudicate. |
-| `audit_events` | 4 | Append-only, attributable action log. |
+| `triage_records` | 4 | Append-only reassessment history, once merge exists. |
 
-None of these are stubbed in code. They appear when their slice lands, together
-with a migration and tests. `victims.latitude` and `victims.longitude` exist on
-both sides and are always null: the columns are the seam Slice 3 writes into,
-and nothing pretends to know where a casualty is until it does.
+`victims.latitude`, `victims.longitude` and `victims.incident_id` are written
+when a casualty is registered against the current operation and last known
+fix. They stay null when those facts were not available — that is the truth
+about how the record was captured.
 
 ## Security posture
 

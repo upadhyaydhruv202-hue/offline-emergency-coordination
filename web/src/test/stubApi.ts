@@ -86,6 +86,45 @@ export function stubSignedInApi(victims?: (path: string) => VictimPage) {
       const page = victims?.(path) ?? { items: [], board: makeBoard(), total: 0 };
       return jsonResponse(200, page);
     }
+    if (path.includes("/incidents/board")) {
+      return jsonResponse(200, { total: 0, by_status: { active: 0, paused: 0, resolved: 0 } });
+    }
+    if (path.includes("/incidents")) {
+      return jsonResponse(200, { items: [], total: 0 });
+    }
+    if (path.includes("/hazards/board")) {
+      return jsonResponse(200, {
+        total: 0,
+        by_severity: { critical: 0, high: 0, medium: 0, low: 0 },
+        by_status: { reported: 0, verified: 0, resolved: 0 },
+      });
+    }
+    if (path.includes("/hazards")) {
+      return jsonResponse(200, { items: [], total: 0 });
+    }
+    if (path.includes("/sos/board")) {
+      return jsonResponse(200, {
+        total: 0,
+        by_priority: { critical: 0, high: 0, medium: 0 },
+        by_status: { created: 0, acknowledged: 0, resolved: 0 },
+      });
+    }
+    if (path.includes("/sos")) {
+      return jsonResponse(200, { items: [], total: 0 });
+    }
+    if (path.includes("/tasks/board")) {
+      return jsonResponse(200, {
+        total: 0,
+        open_tasks: 0,
+        by_status: { pending: 0, accepted: 0, in_progress: 0, completed: 0, cancelled: 0 },
+      });
+    }
+    if (path.includes("/tasks")) {
+      return jsonResponse(200, { items: [], total: 0 });
+    }
+    if (path.includes("/responders")) {
+      return jsonResponse(200, { items: [TEST_USER], total: 1 });
+    }
     return jsonResponse(404, { error: { code: "not_found", message: "No stub for " + path } });
   });
 }

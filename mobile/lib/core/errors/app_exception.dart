@@ -32,3 +32,17 @@ class ApiException extends AppException {
 class LocalDatabaseException extends AppException {
   const LocalDatabaseException(super.message);
 }
+
+/// The device could not produce a position.
+///
+/// Distinct from [OfflineException] on purpose: GPS is a satellite service and
+/// has nothing to do with whether the backend is reachable. Conflating the two
+/// would teach a responder that losing signal means losing their position,
+/// which is both false and dangerous.
+class LocationUnavailableException extends AppException {
+  const LocationUnavailableException(super.message, {this.isPermanent = false});
+
+  /// True when retrying cannot help — the permission was refused for good, and
+  /// the responder has to change it in the operating system's settings.
+  final bool isPermanent;
+}

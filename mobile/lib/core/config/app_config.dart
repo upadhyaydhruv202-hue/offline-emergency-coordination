@@ -26,5 +26,10 @@ class AppConfig {
   /// How often connectivity is re-evaluated when nothing else changes.
   static const Duration connectivityRefreshInterval = Duration(seconds: 20);
 
+  /// How long a single position reading may take before it is reported as
+  /// unavailable. A cold receiver under a concrete slab can take a while;
+  /// waiting forever while a casualty goes unregistered cannot be the answer.
+  static const Duration locationTimeout = Duration(seconds: 12);
+
   static const String localDatabaseName = 'drp_field';
 }

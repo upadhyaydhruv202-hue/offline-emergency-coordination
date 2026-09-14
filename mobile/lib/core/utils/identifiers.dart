@@ -43,12 +43,16 @@ String generateDeviceId([Random? random]) {
   return 'DRP-$hex';
 }
 
-/// A short, speakable label for a victim registered on this device.
+/// A short, speakable label for a record authored on this device.
 ///
 /// A UUID cannot be read out over a radio or written on a triage tag. This is
 /// the identifier a responder actually uses in the field; the device suffix
 /// keeps it unique across devices without any coordination between them.
-String formatTemporaryId({
+///
+/// [prefix] names the kind of record — `V` for a casualty, `INC`, `SOS`, `HZ`,
+/// `TASK` — so a code heard over a radio is unambiguous on its own.
+String formatFieldCode({
+  required String prefix,
   required String deviceId,
   required int sequence,
   String? discriminator,
@@ -57,7 +61,21 @@ String formatTemporaryId({
       ? deviceId.substring(deviceId.length - 4).toUpperCase()
       : deviceId.toUpperCase().padLeft(4, '0');
   final number = sequence.toString().padLeft(3, '0');
+  final base = '${prefix.toUpperCase()}-$suffix-$number';
   return discriminator == null
-      ? 'V-$suffix-$number'
-      : 'V-$suffix-$number-${discriminator.toUpperCase()}';
+      ? base
+      : '$base-${discriminator.toUpperCase()}';
 }
+
+/// The short label printed on a casualty's triage tag, e.g. `V-8C1F-007`.
+String formatTemporaryId({
+  required String deviceId,
+  required int sequence,
+  String? discriminator,
+}) =>
+    formatFieldCode(
+      prefix: 'V',
+      deviceId: deviceId,
+      sequence: sequence,
+      discriminator: discriminator,
+    );

@@ -4,33 +4,62 @@ import 'package:drift_flutter/drift_flutter.dart';
 import '../../core/config/app_config.dart';
 // Part files inherit this library's imports, and the generated code needs the
 // enums backing every `textEnum` column below.
+import '../../domain/entities/audit_event.dart';
+import '../../domain/entities/disaster_type.dart';
+import '../../domain/entities/hazard_severity.dart';
+import '../../domain/entities/hazard_status.dart';
+import '../../domain/entities/hazard_type.dart';
+import '../../domain/entities/incident_status.dart';
 import '../../domain/entities/responder_role.dart';
+import '../../domain/entities/responder_status.dart';
+import '../../domain/entities/sos_priority.dart';
+import '../../domain/entities/sos_status.dart';
 import '../../domain/entities/sync_status.dart';
+import '../../domain/entities/task_priority.dart';
+import '../../domain/entities/task_status.dart';
 import '../../domain/entities/triage_category.dart';
 import '../../domain/entities/victim_demographics.dart';
 import '../../domain/entities/victim_status.dart';
 import 'tables/app_metadata.dart';
+import 'tables/audit_events.dart';
+import 'tables/hazards.dart';
+import 'tables/incidents.dart';
 import 'tables/local_sessions.dart';
+import 'tables/locations.dart';
+import 'tables/responder_statuses.dart';
+import 'tables/sos_events.dart';
+import 'tables/tasks.dart';
 import 'tables/victims.dart';
 
 part 'app_database.g.dart';
 
 /// The device's primary operational datastore.
 ///
-/// This is deliberately not a cache. It holds what the responder authored,
-/// and it is complete without the backend. Every future table (incidents,
-/// triage_records, sos_events, hazards, responders, tasks, locations,
-/// sync_operations, sync_conflicts, audit_events) is added here with a
-/// matching [schemaVersion] bump and a step in [migration]. See
-/// `docs/architecture.md`.
-@DriftDatabase(tables: [AppMetadata, LocalSessions, Victims])
+/// This is deliberately not a cache. It holds what the responder authored, and
+/// it is complete without the backend. Every future table (sync_operations,
+/// sync_conflicts) is added here with a matching [schemaVersion] bump and a
+/// step in [migration]. See `docs/architecture.md`.
+@DriftDatabase(
+  tables: [
+    AppMetadata,
+    LocalSessions,
+    Victims,
+    Incidents,
+    Locations,
+    SosEvents,
+    Hazards,
+    Tasks,
+    ResponderStatuses,
+    AuditEvents,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _open());
 
   /// Bump by one for every additive migration, and add the matching `from`
   /// branch in [migration]. Never edit a released step.
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -38,10 +67,33 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          // Slice 2 adds victims. A device upgraded in the field keeps every
-          // record it already holds, so migrations are additive only.
+          // A device upgraded in the field keeps every record it already
+          // holds, so migrations are additive only: new tables and new
+          // nullable columns, never a drop and never a rewrite.
           if (from < 2) {
             await m.createTable(victims);
+          }
+
+          // Slice 3 adds field operations.
+          if (from < 3) {
+            await m.createTable(incidents);
+            await m.createTable(locations);
+            await m.createTable(sosEvents);
+            await m.createTable(hazards);
+            await m.createTable(tasks);
+            await m.createTable(responderStatuses);
+            await m.createTable(auditEvents);
+
+            // Casualties registered by Slice 2 keep their rows and simply have
+            // no incident or position recorded against them, which is the
+            // truth about how they were captured.
+            await m.addColumn(victims, victims.incidentId);
+            await m.addColumn(victims, victims.locationAccuracy);
+          }
+
+          if (from < 4) {
+            await m.addColumn(locations, locations.provider);
+            await m.addColumn(locations, locations.isMocked);
           }
         },
         beforeOpen: (OpeningDetails details) async {

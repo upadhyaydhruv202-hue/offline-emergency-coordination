@@ -1,7 +1,10 @@
 import {
+  AlertTriangle,
   Boxes,
+  ClipboardList,
   LayoutDashboard,
   Map,
+  Radio,
   Settings,
   Siren,
   Users,
@@ -28,10 +31,13 @@ const SECTIONS: NavSection[] = [
     heading: "Operations",
     items: [
       { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/incidents", label: "Incidents", icon: Siren },
+      { to: "/responders", label: "Responders", icon: Users },
       { to: "/victims", label: "Victims", icon: UserSquare2 },
-      { to: "/incidents", label: "Incidents", icon: Siren, slice: "S3" },
-      { to: "/responders", label: "Responders", icon: Users, slice: "S3" },
-      { to: "/map", label: "Map", icon: Map, slice: "S3" },
+      { to: "/hazards", label: "Hazards", icon: AlertTriangle },
+      { to: "/sos", label: "SOS", icon: Radio },
+      { to: "/tasks", label: "Tasks", icon: ClipboardList },
+      { to: "/map", label: "Map", icon: Map, slice: "S5" },
     ],
   },
   {

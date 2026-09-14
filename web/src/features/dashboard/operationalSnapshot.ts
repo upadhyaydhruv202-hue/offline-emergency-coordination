@@ -1,12 +1,11 @@
 import type { StatusTone } from "../../components/ui/StatusPill";
 
 /**
- * Hard-coded figures for the dashboard.
+ * Hard-coded figures that have not yet left this module.
  *
- * This module is the single place fabricated numbers may live. Victim counts
- * have already left it: the Victims page reads them from the API. When the
- * incident, responder and synchronisation APIs land, the rest follows - no
- * view component needs to change.
+ * Incident, responder, hazard and SOS counts are live from the API. Victim
+ * counts already were. Only pending synchronisation remains fabricated: nothing
+ * in this slice actually sends a record.
  */
 
 export interface OperationalMetric {
@@ -20,30 +19,6 @@ export interface OperationalMetric {
 }
 
 export const OPERATIONAL_METRICS: OperationalMetric[] = [
-  {
-    key: "active-incidents",
-    label: "Active incidents",
-    value: 3,
-    caption: "1 major · 2 localised",
-    tone: "high",
-    source: "S3",
-  },
-  {
-    key: "active-responders",
-    label: "Active responders",
-    value: 47,
-    caption: "12 rescue · 9 medical · 26 volunteer",
-    tone: "nominal",
-    source: "S3",
-  },
-  {
-    key: "active-hazards",
-    label: "Active hazards",
-    value: 5,
-    caption: "2 structural · 2 gas · 1 flood",
-    tone: "elevated",
-    source: "S3",
-  },
   {
     key: "pending-sync",
     label: "Pending synchronisation",
@@ -67,8 +42,9 @@ export const CAPABILITY_LEDGER: SliceCapability[] = [
   { area: "Local database", detail: "Drift/SQLite on the field device", state: "live", slice: "S1" },
   { area: "Connectivity", detail: "Online / degraded / offline detection", state: "live", slice: "S1" },
   { area: "Victims & triage", detail: "Offline registration, four-category triage", state: "live", slice: "S2" },
-  { area: "Incidents", detail: "Declaration, sectors, command structure", state: "planned", slice: "S3" },
-  { area: "SOS & hazards", detail: "Distress beacons, hazard reporting", state: "planned", slice: "S3" },
+  { area: "Incidents", detail: "Local declaration, current operation, zones", state: "live", slice: "S3" },
+  { area: "SOS & hazards", detail: "Local distress calls and hazard reports", state: "live", slice: "S3" },
+  { area: "Tasks & responder status", detail: "Local lifecycle and check-in state", state: "live", slice: "S3" },
   { area: "Peer synchronisation", detail: "CRDT merge, conflict resolution", state: "planned", slice: "S4" },
   { area: "Mesh transport", detail: "BLE, Wi-Fi Direct, LoRa carriage", state: "planned", slice: "S5" },
 ];

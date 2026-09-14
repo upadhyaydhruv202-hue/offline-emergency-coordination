@@ -95,7 +95,7 @@ lib/
 - Splash with real session restoration from SQLite
 - Login against `POST /auth/login`, plus offline demo mode
 - Role display, and role selection for local demo sessions
-- Responder home: name, role, incident (demo), connectivity, database status
+- Responder home: name, role, connectivity, database status
 - Profile with session/device detail and sign-out
 - Drift schema v1: `app_metadata`, `local_sessions`
 - Connectivity service: `ONLINE` / `DEGRADED` / `OFFLINE`
@@ -118,8 +118,20 @@ marked `pending`, and Slice 4 will be what finally moves them.
 The three screenshots in [`docs/screenshots/`](../docs/screenshots) named
 `mobile-*` were taken on a device with no network interface.
 
-Not implemented, and not simulated — `/incidents`, `/sos`, `/hazards`, `/tasks`
-and `/map` render a page naming the slice that delivers them.
+**Slice 3 — field operations, entirely offline**
+
+- Incident declaration, list, detail and current-operation selection
+- Manual GPS capture into `locations`
+- SOS with confirmation, history and local resolve
+- Hazard report / list / filters
+- Task create / accept / start / complete
+- Responder operational status
+- Victims inherit current incident, responder and last known position
+- Local audit trail
+- Drift schema v3
+
+Nothing in these flows calls the backend. `/map` still names the slice that
+delivers it.
 
 ## Tests
 
@@ -127,16 +139,18 @@ and `/map` render a page naming the slice that delivers them.
 flutter test
 ```
 
-79 tests, all passing on Flutter 3.47.2 / Dart 3.13.2.
+94 tests.
 
 | File | Tests | Covers |
 | --- | --- | --- |
-| `test/app_smoke_test.dart` | 7 | Boots the real app: login, offline demo, home, placeholders, restart |
+| `test/app_smoke_test.dart` | 8 | Boots the real app: login, offline demo, home, SOS live, restart |
 | `test/connectivity_test.dart` | 15 | The `ONLINE`/`DEGRADED`/`OFFLINE` rule and the service around it |
 | `test/auth_flow_test.dart` | 12 | Offline demo sessions, backend sign-in, role model, redirect policy |
 | `test/local_database_test.dart` | 11 | Drift initialisation, schema, session persistence, metadata |
-| `test/victim_store_test.dart` | 26 | Schema v2, registration, persistence, reassessment, ordering, filters, counts |
-| `test/victim_offline_flow_test.dart` | 8 | The whole offline journey through the real app widget |
+| `test/victim_store_test.dart` | 26 | Schema v3, registration, persistence, reassessment, ordering, filters, counts |
+| `test/victim_offline_flow_test.dart` | 8 | The whole offline victim journey through the real app widget |
+| `test/field_ops_store_test.dart` | 13 | Incident, location, SOS, hazard, task, status, audit, victim scoping |
+| `test/field_ops_offline_flow_test.dart` | 1 | Full field-ops journey with no network, then restart |
 
 `app_smoke_test.dart` and `victim_offline_flow_test.dart` pump
 `DisasterResponseApp` itself and override only the two things that need a

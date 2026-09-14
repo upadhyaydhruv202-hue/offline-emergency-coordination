@@ -1,3 +1,4 @@
+import 'location_fix.dart';
 import 'sync_status.dart';
 import 'triage_category.dart';
 import 'victim_demographics.dart';
@@ -25,8 +26,10 @@ class Victim {
     this.medicalCondition,
     this.injuryType,
     this.assistanceRequired,
+    this.incidentId,
     this.latitude,
     this.longitude,
+    this.locationAccuracy,
   });
 
   /// Device-minted UUID. Stable for the life of the record, across devices.
@@ -54,10 +57,17 @@ class Victim {
   final String? assistanceRequired;
   final VictimStatus status;
 
-  /// Reserved for the spatial slice. Slice 2 captures no position, so these
-  /// are null on every record it writes.
+  /// The incident the casualty was registered under. Null on records authored
+  /// by Slice 2, and on any record written before the device adopted an
+  /// incident — a casualty in front of you outranks bookkeeping.
+  final String? incidentId;
+
+  /// Where the responder was standing when they registered the casualty, taken
+  /// from the device's own receiver. Null when no fix was available, which is
+  /// never a reason to refuse the registration.
   final double? latitude;
   final double? longitude;
+  final double? locationAccuracy;
 
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -76,6 +86,20 @@ class Victim {
 
   bool get hasPosition => latitude != null && longitude != null;
 
+  /// The stored coordinates as a reading, so the detail screen can reuse the
+  /// degree and accuracy formatting rather than restating it.
+  ///
+  /// Timestamped with [createdAt] because that is when the position was
+  /// attached; the reading itself may have been taken slightly earlier.
+  LocationFix? get position => hasPosition
+      ? LocationFix(
+          latitude: latitude!,
+          longitude: longitude!,
+          accuracy: locationAccuracy,
+          timestamp: createdAt,
+        )
+      : null;
+
   Victim copyWith({
     String? name,
     bool clearName = false,
@@ -91,8 +115,10 @@ class Victim {
     String? assistanceRequired,
     bool clearAssistanceRequired = false,
     VictimStatus? status,
+    String? incidentId,
     double? latitude,
     double? longitude,
+    double? locationAccuracy,
     DateTime? updatedAt,
     SyncStatus? syncStatus,
   }) {
@@ -114,8 +140,10 @@ class Victim {
           ? null
           : (assistanceRequired ?? this.assistanceRequired),
       status: status ?? this.status,
+      incidentId: incidentId ?? this.incidentId,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      locationAccuracy: locationAccuracy ?? this.locationAccuracy,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       createdBy: createdBy,
@@ -139,8 +167,10 @@ class Victim {
           other.priority == priority &&
           other.assistanceRequired == assistanceRequired &&
           other.status == status &&
+          other.incidentId == incidentId &&
           other.latitude == latitude &&
           other.longitude == longitude &&
+          other.locationAccuracy == locationAccuracy &&
           other.updatedAt == updatedAt &&
           other.syncStatus == syncStatus;
 
@@ -157,6 +187,7 @@ class Victim {
         triageCategory,
         status,
         assistanceRequired,
+        incidentId,
         latitude,
         longitude,
         updatedAt,

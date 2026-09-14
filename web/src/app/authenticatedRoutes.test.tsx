@@ -63,9 +63,24 @@ describe("authenticated routing", () => {
   });
 
   it.each([
-    ["/incidents", /incidents/i, /slice 3/i],
-    ["/responders", /responders/i, /slice 3/i],
-    ["/map", /operational map/i, /slice 3/i],
+    ["/incidents", /incidents/i],
+    ["/responders", /responders/i],
+    ["/hazards", /hazards/i],
+    ["/sos", /^SOS$/],
+    ["/tasks", /tasks/i],
+  ])("renders %s as a live operational page", async (path, heading) => {
+    seedStoredSession();
+    stubSignedInApi();
+
+    renderRoute(path);
+
+    expect(await screen.findByRole("heading", { name: heading })).toBeInTheDocument();
+    expect(screen.getByText(/slice 3 — field operations/i)).toBeInTheDocument();
+    expect(screen.queryByText(/coming in development slice/i)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["/map", /operational map/i, /slice 5/i],
     ["/resources", /resources/i, /slice 4/i],
     ["/settings", /settings/i, /slice 4/i],
   ])("renders %s as an explicit placeholder", async (path, heading, slice) => {

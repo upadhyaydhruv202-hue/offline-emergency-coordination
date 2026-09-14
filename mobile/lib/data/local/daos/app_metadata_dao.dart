@@ -16,6 +16,16 @@ class AppMetadataDao {
     return row?.value;
   }
 
+  /// Live value of [key], emitting null while it has never been set.
+  ///
+  /// Used for facts that outlive a process but belong to the device rather than
+  /// to a record — the current incident, for instance, which has to survive a
+  /// restart and has to be reflected on every screen the moment it changes.
+  Stream<String?> watch(String key) =>
+      (_db.select(_db.appMetadata)..where((tbl) => tbl.key.equals(key)))
+          .watchSingleOrNull()
+          .map((row) => row?.value);
+
   Future<void> write(String key, String value) async {
     await _db.into(_db.appMetadata).insertOnConflictUpdate(
           AppMetadataCompanion.insert(
@@ -49,6 +59,11 @@ class AppMetadataDao {
         await write(key, next.toString());
         return next;
       });
+
+  Future<void> delete(String key) async {
+    await (_db.delete(_db.appMetadata)..where((tbl) => tbl.key.equals(key)))
+        .go();
+  }
 
   Future<int> count() async {
     final query = _db.selectOnly(_db.appMetadata)
