@@ -15,7 +15,7 @@ import '../../features/incidents/presentation/incident_declare_screen.dart';
 import '../../features/incidents/presentation/incident_detail_screen.dart';
 import '../../features/incidents/presentation/incident_edit_screen.dart';
 import '../../features/incidents/presentation/incidents_screen.dart';
-import '../../features/placeholder/placeholder_screen.dart';
+import '../../features/map/map_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/sos/presentation/sos_detail_screen.dart';
 import '../../features/sos/presentation/sos_screen.dart';
@@ -121,14 +121,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const SyncCenterScreen(),
           ),
           GoRoute(
+            path: AppRoute.map.path,
+            builder: (context, state) => const MapScreen(),
+          ),
+          GoRoute(
             path: AppRoute.profile.path,
             builder: (context, state) => const ProfileScreen(),
           ),
-          for (final route in _placeholderRoutes)
-            GoRoute(
-              path: route.route.path,
-              builder: (context, state) => PlaceholderScreen(spec: route),
-            ),
         ],
       ),
 
@@ -256,17 +255,3 @@ AppRoute? _routeFor(String location) {
   }
   return null;
 }
-
-/// The modules that are routed but not yet built.
-const List<PlaceholderSpec> _placeholderRoutes = [
-  PlaceholderSpec(
-    route: AppRoute.map,
-    slice: 5,
-    summary: 'An offline map of the sector with responders, victims and hazards.',
-    scope: [
-      'Cached tiles for use with no network',
-      'Own position and team positions',
-      'Hazard zones and search progress',
-    ],
-  ),
-];

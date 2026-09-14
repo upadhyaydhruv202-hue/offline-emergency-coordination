@@ -154,7 +154,7 @@ void main() {
     await closeApp(tester);
   });
 
-  testWidgets('an unbuilt module names the slice that will deliver it', (
+  testWidgets('the field map plots local pins instead of a later-slice stub', (
     tester,
   ) async {
     await bootApp(tester);
@@ -163,9 +163,14 @@ void main() {
     await tester.tap(find.byIcon(Icons.map_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.text('COMING IN SLICE 5'), findsOneWidget);
+    expect(find.text('COMING IN SLICE 5'), findsNothing);
+    expect(find.textContaining('LOCAL DATA'), findsWidgets);
     expect(
-      find.textContaining('Coming in the next development slice'),
+      find.textContaining('Pins are records stored on this handset'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('street tiles paused while this handset is offline'),
       findsOneWidget,
     );
 

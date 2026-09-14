@@ -27,12 +27,16 @@ from app.core.config import settings
 from app.db.session import SessionFactory
 from app.models.enums import (
     AgeGroup,
+    AuditSeverity,
     DisasterType,
+    FacilityKind,
+    FacilityStatus,
     Gender,
     HazardSeverity,
     HazardStatus,
     HazardType,
     IncidentStatus,
+    ResponderStatus,
     SosPriority,
     SosStatus,
     SyncEntityType,
@@ -45,6 +49,9 @@ from app.models.enums import (
     UserRole,
     VictimStatus,
 )
+from app.models.audit_event import AuditEvent
+from app.models.facility import Facility
+from app.models.responder_presence import ResponderPresence
 from app.models.sync_conflict import SyncConflict
 from app.models.sync_operation import SyncOperation
 from app.repositories.hazard_repository import HazardRepository
@@ -82,6 +89,8 @@ PERSONAS: tuple[SeedPersona, ...] = (
     SeedPersona("medical@drp.example", "Dr. P. Iyer", UserRole.MEDICAL_TEAM),
     SeedPersona("volunteer@drp.example", "K. Sharma", UserRole.VOLUNTEER),
     SeedPersona("admin@drp.example", "Platform Admin", UserRole.ADMIN),
+    SeedPersona("alpha@drp.example", "Responder Alpha", UserRole.RESCUE_TEAM),
+    SeedPersona("bravo@drp.example", "Responder Bravo", UserRole.RESCUE_TEAM),
 )
 
 
@@ -123,6 +132,8 @@ class SeedCasualty:
     triage: TriageCategory
     status: VictimStatus
     injury: str
+    lat_offset: float
+    lng_offset: float
 
 
 # `SEED` in the tag rather than a device code, so a demo record is never
@@ -135,6 +146,8 @@ CASUALTIES: tuple[SeedCasualty, ...] = (
         TriageCategory.CRITICAL,
         VictimStatus.AWAITING_EVACUATION,
         "Crush injury to left leg",
+        0.004,
+        -0.003,
     ),
     SeedCasualty(
         "V-SEED-002",
@@ -143,6 +156,8 @@ CASUALTIES: tuple[SeedCasualty, ...] = (
         TriageCategory.CRITICAL,
         VictimStatus.UNDER_TREATMENT,
         "Head trauma, unresponsive",
+        0.006,
+        0.002,
     ),
     SeedCasualty(
         "V-SEED-003",
@@ -151,6 +166,8 @@ CASUALTIES: tuple[SeedCasualty, ...] = (
         TriageCategory.URGENT,
         VictimStatus.REGISTERED,
         "Open fracture, right forearm",
+        -0.003,
+        0.005,
     ),
     SeedCasualty(
         "V-SEED-004",
@@ -159,6 +176,8 @@ CASUALTIES: tuple[SeedCasualty, ...] = (
         TriageCategory.MODERATE,
         VictimStatus.REGISTERED,
         "Lacerations, smoke inhalation",
+        -0.005,
+        -0.004,
     ),
     SeedCasualty(
         "V-SEED-005",
@@ -167,6 +186,8 @@ CASUALTIES: tuple[SeedCasualty, ...] = (
         TriageCategory.STABLE,
         VictimStatus.EVACUATED,
         "Minor abrasions",
+        0.001,
+        0.007,
     ),
 )
 
@@ -198,6 +219,8 @@ def seed_victims(session: Session) -> tuple[int, int]:
                 triage_category=casualty.triage,
                 status=casualty.status,
                 created_by="seed",
+                latitude=_ZONE_LATITUDE + casualty.lat_offset,
+                longitude=_ZONE_LONGITUDE + casualty.lng_offset,
             )
         )
         created += 1
@@ -205,14 +228,8 @@ def seed_victims(session: Session) -> tuple[int, int]:
     return created, skipped
 
 
-# Coordinates put the demo set somewhere real so the command centre's map has
-# something plausible to draw.
 _ZONE_LATITUDE = 23.0225
 _ZONE_LONGITUDE = 72.5714
-
-# Every field-operations demo record is authored by "seed" rather than a
-# device session id, so it can never be mistaken for something a responder
-# actually reported.
 _SEED_AUTHOR = "seed"
 
 
@@ -427,7 +444,7 @@ def seed_field_operations(session: Session) -> tuple[int, int]:
     primary = incidents.get_by_code(INCIDENTS[0].incident_code)
     incident_id = primary.id if primary is not None else None
 
-    for hazard in HAZARDS:
+    for index, hazard in enumerate(HAZARDS):
         if hazards.get_by_code(hazard.hazard_code) is not None:
             skipped += 1
             continue
@@ -440,15 +457,15 @@ def seed_field_operations(session: Session) -> tuple[int, int]:
                 type=hazard.hazard_type,
                 severity=hazard.severity,
                 description=hazard.description,
-                latitude=_ZONE_LATITUDE,
-                longitude=_ZONE_LONGITUDE,
+                latitude=_ZONE_LATITUDE + 0.002 * (index + 1),
+                longitude=_ZONE_LONGITUDE - 0.002 * (index + 1),
                 observed_at=now - timedelta(minutes=hazard.minutes_ago),
                 status=hazard.status,
             )
         )
         created += 1
 
-    for sos_event in SOS_EVENTS:
+    for index, sos_event in enumerate(SOS_EVENTS):
         if sos_events.get_by_code(sos_event.sos_code) is not None:
             skipped += 1
             continue
@@ -458,8 +475,8 @@ def seed_field_operations(session: Session) -> tuple[int, int]:
                 sos_code=sos_event.sos_code,
                 incident_id=incident_id,
                 created_by=_SEED_AUTHOR,
-                latitude=_ZONE_LATITUDE,
-                longitude=_ZONE_LONGITUDE,
+                latitude=_ZONE_LATITUDE - 0.003 * (index + 1),
+                longitude=_ZONE_LONGITUDE + 0.003 * (index + 1),
                 raised_at=now - timedelta(minutes=sos_event.minutes_ago),
                 priority=sos_event.priority,
                 message=sos_event.message,
@@ -550,12 +567,173 @@ def seed_sync_demo(session: Session) -> tuple[int, int]:
     return 2, 0
 
 
+ROAD_R12_ID = uuid.UUID("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee0012")
+
+
+def seed_command_center(session: Session) -> tuple[int, int]:
+    """Hospitals, shelters, Road R-12, responder positions and the COP feed."""
+    from app.repositories.user_repository import UserRepository
+    from app.repositories.victim_repository import VictimRepository
+
+    created = skipped = 0
+    now = datetime.now(UTC)
+    incidents = IncidentRepository(session)
+    hazards = HazardRepository(session)
+    victims = VictimRepository(session)
+    primary = incidents.get_by_code("INC-SEED-001")
+    incident_id = primary.id if primary is not None else None
+
+    if hazards.get_by_code("HZ-R12") is None:
+        HazardService(session).register(
+            HazardCreate(
+                id=ROAD_R12_ID,
+                hazard_code="HZ-R12",
+                incident_id=incident_id,
+                reported_by="DRP-BRAVO001",
+                type=HazardType.PARTIALLY_ACCESSIBLE,
+                severity=HazardSeverity.MEDIUM,
+                description="Road R-12 — converged shared state after SIMULATED SYNC",
+                latitude=_ZONE_LATITUDE + 0.008,
+                longitude=_ZONE_LONGITUDE + 0.006,
+                observed_at=now - timedelta(minutes=12),
+                status=HazardStatus.VERIFIED,
+            )
+        )
+        created += 1
+    else:
+        skipped += 1
+
+    for casualty in CASUALTIES:
+        row = victims.get_by_temporary_id(casualty.temporary_id)
+        if row is None:
+            continue
+        if row.latitude is None:
+            row.latitude = _ZONE_LATITUDE + casualty.lat_offset
+            row.longitude = _ZONE_LONGITUDE + casualty.lng_offset
+            session.add(row)
+            created += 1
+
+    facilities = (
+        Facility(
+            id=uuid.UUID("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee0a01"),
+            facility_code="HSP-SEED-001",
+            kind=FacilityKind.HOSPITAL,
+            name="Civil Hospital Ahmedabad",
+            status=FacilityStatus.LIMITED,
+            incident_id=incident_id,
+            latitude=_ZONE_LATITUDE + 0.012,
+            longitude=_ZONE_LONGITUDE - 0.008,
+            capacity_total=120,
+            occupancy=98,
+            emergency_available=True,
+            notes="Emergency wing open. ICU near capacity.",
+        ),
+        Facility(
+            id=uuid.UUID("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee0a02"),
+            facility_code="SHL-SEED-001",
+            kind=FacilityKind.SHELTER,
+            name="Zone 04 Community Shelter",
+            status=FacilityStatus.OPEN,
+            incident_id=incident_id,
+            latitude=_ZONE_LATITUDE - 0.009,
+            longitude=_ZONE_LONGITUDE + 0.011,
+            capacity_total=400,
+            occupancy=210,
+            emergency_available=False,
+            notes="Water and blankets on site.",
+        ),
+        Facility(
+            id=uuid.UUID("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee0a03"),
+            facility_code="RES-SEED-001",
+            kind=FacilityKind.RESOURCE_CACHE,
+            name="Ward 12 Staging Cache",
+            status=FacilityStatus.OPEN,
+            incident_id=incident_id,
+            latitude=_ZONE_LATITUDE + 0.002,
+            longitude=_ZONE_LONGITUDE - 0.012,
+            capacity_total=80,
+            occupancy=35,
+            emergency_available=False,
+            notes="Stretchers and drinking water. SIMULATED stock figure.",
+        ),
+    )
+    for facility in facilities:
+        existing = session.get(Facility, facility.id)
+        if existing is not None:
+            skipped += 1
+            continue
+        session.add(facility)
+        created += 1
+
+    users = UserRepository(session)
+    presence_specs = (
+        ("alpha@drp.example", ResponderStatus.ON_MISSION, 0.005, -0.002, "DRP-ALPHA001", "Search collapsed block"),
+        ("bravo@drp.example", ResponderStatus.EN_ROUTE, -0.004, 0.006, "DRP-BRAVO001", "Road R-12 survey"),
+        ("rescue@drp.example", ResponderStatus.AVAILABLE, 0.001, 0.001, "DRP-RESCUE01", None),
+        ("medical@drp.example", ResponderStatus.ON_MISSION, 0.007, 0.004, "DRP-MEDICAL1", "Triage point"),
+        ("volunteer@drp.example", ResponderStatus.OFF_DUTY, None, None, None, None),
+    )
+    for email, status, lat_off, lng_off, device_id, task in presence_specs:
+        user = users.get_by_email(email)
+        if user is None:
+            skipped += 1
+            continue
+        existing = session.query(ResponderPresence).filter(ResponderPresence.user_id == user.id).first()
+        if existing is not None:
+            skipped += 1
+            continue
+        session.add(
+            ResponderPresence(
+                user_id=user.id,
+                status=status,
+                latitude=None if lat_off is None else _ZONE_LATITUDE + lat_off,
+                longitude=None if lng_off is None else _ZONE_LONGITUDE + lng_off,
+                last_seen_at=now - timedelta(minutes=4),
+                device_id=device_id,
+                assigned_incident_id=incident_id,
+                assigned_task=task,
+            )
+        )
+        created += 1
+
+    feed = (
+        ("VICTIM", "Victim V-SEED-001 triage recorded as CRITICAL", AuditSeverity.CRITICAL, "VICTIM"),
+        ("HAZARD", "Road R-12 reported BLOCKED by Device A (SIMULATED SYNC)", AuditSeverity.HIGH, "HAZARD"),
+        ("RESPONDER", "Responder Alpha assigned to Zone 04", AuditSeverity.INFO, "RESPONDER"),
+        ("SOS", "SOS alert received from trapped team SOS-SEED-001", AuditSeverity.CRITICAL, "SOS"),
+        ("HAZARD", "Hazard HZ-SEED-001 updated: building damage verified", AuditSeverity.HIGH, "HAZARD"),
+        ("SYNC", "Sync conflict detected for Road R-12", AuditSeverity.HIGH, "HAZARD"),
+        ("SYNC", "Conflict resolved using deterministic device tie-break", AuditSeverity.INFO, "HAZARD"),
+        ("SYNC", "Entities converged successfully — SIMULATED SYNC", AuditSeverity.INFO, "HAZARD"),
+    )
+    existing_feed = session.query(AuditEvent).count()
+    if existing_feed:
+        skipped += existing_feed
+    else:
+        for index, (category, summary, severity, entity_type) in enumerate(feed):
+            session.add(
+                AuditEvent(
+                    category=category,
+                    summary=summary,
+                    severity=severity,
+                    entity_type=entity_type,
+                    entity_id=str(ROAD_R12_ID) if "R-12" in summary else None,
+                    actor_id="seed",
+                    occurred_at=now - timedelta(minutes=40 - index * 4),
+                )
+            )
+            created += 1
+
+    return created, skipped
+
+
 def main() -> int:
     password, generated = resolve_seed_password()
     flags = sys.argv[1:]
-    with_victims = "--victims" in flags
-    with_field_ops = "--field-ops" in flags
-    with_sync_demo = "--sync-demo" in flags
+    with_command_center = "--command-center" in flags
+    with_victims = "--victims" in flags or with_command_center
+    with_field_ops = "--field-ops" in flags or with_command_center
+    with_sync_demo = "--sync-demo" in flags or with_command_center
 
     with SessionFactory() as session:
         created, skipped = seed_users(session, password)
@@ -571,6 +749,11 @@ def main() -> int:
 
         if with_sync_demo:
             sync_created, sync_skipped = seed_sync_demo(session)
+            session.commit()
+
+        command_created = command_skipped = 0
+        if with_command_center:
+            command_created, command_skipped = seed_command_center(session)
             session.commit()
 
     print(f"Seed complete: {created} created, {skipped} already present.")
@@ -594,6 +777,12 @@ def main() -> int:
         print(
             f"\nDemo sync ingest: {sync_created} operations created, "
             f"{sync_skipped} already present. Road R-12 conflict is labelled SIMULATED."
+        )
+
+    if with_command_center:
+        print(
+            f"\nCommand centre COP: {command_created} created, "
+            f"{command_skipped} already present. Road R-12, hospitals and shelters included."
         )
 
     if generated:

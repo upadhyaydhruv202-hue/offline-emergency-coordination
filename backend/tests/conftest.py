@@ -63,6 +63,13 @@ def _clean_tables(session: Session) -> Iterator[None]:
     yield
     # Children before parents, so the foreign keys to ``incidents`` hold on a
     # backend that enforces them.
+    from app.models.audit_event import AuditEvent
+    from app.models.facility import Facility
+    from app.models.responder_presence import ResponderPresence
+
+    session.query(ResponderPresence).delete()
+    session.query(Facility).delete()
+    session.query(AuditEvent).delete()
     session.query(Hazard).delete()
     session.query(SosEvent).delete()
     session.query(Task).delete()

@@ -2,10 +2,12 @@ import { apiRequest } from "./client";
 
 export interface SyncStatus {
   pending: number;
+  in_flight?: number;
   acknowledged: number;
   failed: number;
   conflicts: number;
   last_push_at: string | null;
+  transport?: string;
   note: string;
 }
 
@@ -45,4 +47,27 @@ export function fetchSyncConflicts(token: string, signal?: AbortSignal) {
 
 export function fetchSyncDemoScenario(token: string, signal?: AbortSignal) {
   return apiRequest<SyncDemoScenario>("/sync/demo-scenario", { token, signal });
+}
+
+export interface SyncOperation {
+  operation_id: string;
+  device_id: string;
+  actor_id: string;
+  entity_type: string;
+  entity_id: string;
+  operation_type: string;
+  queue_status: string;
+  version: number;
+  logical_timestamp: number;
+  created_at: string;
+  failure_reason: string | null;
+}
+
+export interface SyncOperationPage {
+  items: SyncOperation[];
+  total: number;
+}
+
+export function fetchSyncOperations(token: string, signal?: AbortSignal) {
+  return apiRequest<SyncOperationPage>("/sync/operations", { token, signal });
 }

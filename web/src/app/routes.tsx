@@ -1,15 +1,13 @@
 import { Navigate, type RouteObject } from "react-router-dom";
 import { CommandShell } from "../components/layout/CommandShell";
 import { LoginPage } from "../features/auth/LoginPage";
+import { AuditPage } from "../features/audit/AuditPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
+import { HospitalsPage, ResourcesPage, SheltersPage } from "../features/facilities/FacilitiesPage";
 import { HazardsPage } from "../features/hazards/HazardsPage";
 import { IncidentsPage } from "../features/incidents/IncidentsPage";
-import {
-  MapPage,
-  NotFoundPage,
-  ResourcesPage,
-  SettingsPage,
-} from "../features/placeholders/pages";
+import { MapPage } from "../features/map/MapPage";
+import { NotFoundPage, SettingsPage } from "../features/placeholders/pages";
 import { RespondersPage } from "../features/responders/RespondersPage";
 import { SosPage } from "../features/sos/SosPage";
 import { ConflictViewerPage } from "../features/sync/ConflictViewerPage";
@@ -18,7 +16,6 @@ import { TasksPage } from "../features/tasks/TasksPage";
 import { VictimsPage } from "../features/victims/VictimsPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 
-/** Exported separately from the router so tests can mount them in memory. */
 export const routes: RouteObject[] = [
   { path: "/login", element: <LoginPage /> },
   {
@@ -38,7 +35,10 @@ export const routes: RouteObject[] = [
           { path: "sync", element: <SyncDashboardPage /> },
           { path: "sync/conflicts", element: <ConflictViewerPage /> },
           { path: "map", element: <MapPage /> },
+          { path: "hospitals", element: <HospitalsPage /> },
+          { path: "shelters", element: <SheltersPage /> },
           { path: "resources", element: <ResourcesPage /> },
+          { path: "audit", element: <AuditPage /> },
           { path: "settings", element: <SettingsPage /> },
           { path: "*", element: <NotFoundPage /> },
         ],

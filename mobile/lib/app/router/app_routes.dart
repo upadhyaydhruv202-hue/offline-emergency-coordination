@@ -1,8 +1,7 @@
 /// Every destination in the field application.
 ///
-/// Slices 1 to 3 implement [splash], [login], [role], [home], [profile] and the
-/// incident, victim, SOS, hazard and task modules. [map] is routed and reachable
-/// but renders an explicit "coming in a later slice" page — it is not simulated.
+/// Slices 1 to 5 implement splash through sync plus the field map. Tiles are
+/// not cached offline; pins always come from local SQLite.
 enum AppRoute {
   splash('/', 'Splash'),
   login('/login', 'Sign in'),

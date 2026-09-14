@@ -16,7 +16,10 @@ export const SEVERITY_TONE: Record<string, StatusTone> = {
   ACCEPTED: "info",
   IN_PROGRESS: "elevated",
   COMPLETED: "nominal",
-  CANCELLED: "inactive",
+  LIMITED: "elevated",
+  OPEN: "nominal",
+  FULL: "high",
+  CLOSED: "inactive",
 };
 
 export function formatTimestamp(value: string): string {
@@ -28,6 +31,17 @@ export function formatTimestamp(value: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+export function formatRelative(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  const minutes = Math.round((Date.now() - parsed.getTime()) / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  return formatTimestamp(value);
 }
 
 export function formatCoords(lat: number | null, lng: number | null): string {

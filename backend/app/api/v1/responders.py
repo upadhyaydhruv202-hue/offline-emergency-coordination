@@ -1,18 +1,23 @@
 """Responder roster endpoint.
 
-Read-only: accounts are created through ``/auth``, and a roster the command
-centre could edit would put two authorities on the same row.
+Read-only for identity. Presence (status + last known position) is a separate
+row so the roster account and the last ingested check-in do not fight.
 """
 
 from __future__ import annotations
 
+import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Query
 
-from app.api.deps import CurrentUser, ResponderServiceDep
+from app.api.deps import CurrentUser, DbSession, ResponderServiceDep
+from app.core.errors import AuthorizationError
+from app.models.enums import COMMAND_ROLES
 from app.models.enums import UserRole
+from app.schemas.presence import PresenceRead, PresenceUpdate
 from app.schemas.responder import ResponderPage
+from app.services.presence_service import PresenceService
 
 router = APIRouter(prefix="/responders", tags=["Responders"])
 
@@ -34,3 +39,15 @@ def list_responders(
         limit=limit,
         offset=offset,
     )
+
+
+@router.patch("/{responder_id}/presence", response_model=PresenceRead)
+def update_presence(
+    responder_id: uuid.UUID,
+    payload: PresenceUpdate,
+    session: DbSession,
+    current: CurrentUser,
+) -> PresenceRead:
+    if current.id != responder_id and current.role not in COMMAND_ROLES:
+        raise AuthorizationError("You may only update your own responder status")
+    return PresenceRead.model_validate(PresenceService(session).upsert(responder_id, payload))

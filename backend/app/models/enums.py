@@ -289,9 +289,8 @@ class TaskStatus(StrEnum):
 class ResponderStatus(StrEnum):
     """A responder's own availability, as they last reported it.
 
-    Defined here with the rest of the field-operations vocabulary, but no
-    column stores it yet: the roster endpoint reports identity and activation
-    only until devices start reporting their own state.
+    Stored on ``responder_presences`` for the command-centre map. Field devices
+    remain the authority while offline; this row is the last ingested copy.
     """
 
     AVAILABLE = "AVAILABLE"
@@ -303,6 +302,33 @@ class ResponderStatus(StrEnum):
     @property
     def label(self) -> str:
         return self.value.replace("_", " ").capitalize()
+
+
+class FacilityKind(StrEnum):
+    HOSPITAL = "HOSPITAL"
+    SHELTER = "SHELTER"
+    RESOURCE_CACHE = "RESOURCE_CACHE"
+
+    @property
+    def label(self) -> str:
+        return self.value.replace("_", " ").capitalize()
+
+
+class FacilityStatus(StrEnum):
+    OPEN = "OPEN"
+    LIMITED = "LIMITED"
+    FULL = "FULL"
+    CLOSED = "CLOSED"
+
+    @property
+    def label(self) -> str:
+        return self.value.capitalize()
+
+
+class AuditSeverity(StrEnum):
+    INFO = "INFO"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
 
 
 class SyncEntityType(StrEnum):

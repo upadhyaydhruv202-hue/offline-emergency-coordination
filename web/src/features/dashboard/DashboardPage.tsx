@@ -1,32 +1,23 @@
-import { useCallback } from "react";
+import { Link } from "react-router-dom";
 import { Panel } from "../../components/ui/Panel";
 import { DemoDataNotice } from "../../components/ui/DemoDataNotice";
 import { StatusPill } from "../../components/ui/StatusPill";
 import { ROLE_LABELS } from "../../lib/api/auth";
-import { fetchHazardBoard } from "../../lib/api/hazards";
-import { fetchIncidentBoard } from "../../lib/api/incidents";
-import { fetchResponders } from "../../lib/api/responders";
-import { fetchSosBoard } from "../../lib/api/sos";
-import { fetchSyncStatus } from "../../lib/api/sync";
 import { useAuth } from "../auth/useAuth";
-import { useBoard } from "../ops/useOperationalQuery";
-import { useVictimBoard } from "../victims/useVictims";
-import { MetricTile, Tile } from "./MetricTile";
-import { CAPABILITY_LEDGER, OPERATIONAL_METRICS } from "./operationalSnapshot";
+import { useCommandStatus } from "../command/commandStatus";
+import { BackendUnreachable } from "../ops/BackendUnreachable";
+import { formatRelative, formatTimestamp, SEVERITY_TONE } from "../ops/severity";
+import { Tile } from "./MetricTile";
+import { CAPABILITY_LEDGER } from "./operationalSnapshot";
 
 export function DashboardPage() {
   const { user } = useAuth();
-  const board = useVictimBoard();
-  const incidents = useBoard(useCallback(fetchIncidentBoard, []));
-  const hazards = useBoard(useCallback(fetchHazardBoard, []));
-  const sos = useBoard(useCallback(fetchSosBoard, []));
-  const sync = useBoard(useCallback(fetchSyncStatus, []));
-  const responders = useBoard(
-    useCallback((token: string, signal: AbortSignal) => fetchResponders(token, {}, signal), []),
-  );
+  const { snapshot, connection, error, reload } = useCommandStatus();
+  const kpis = snapshot?.kpis;
+  const stale = connection !== "live";
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
+    <div className="mx-auto max-w-[1600px] space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold text-ink-100">Operational overview</h1>
@@ -34,93 +25,152 @@ export function DashboardPage() {
             Signed in as {user?.full_name} · {user ? ROLE_LABELS[user.role] : ""}
           </p>
         </div>
-        <StatusPill tone="info">Slice 4 — local-first sync</StatusPill>
+        <StatusPill tone="info">Slice 5 — command centre</StatusPill>
       </div>
+
+      {connection === "offline" && !snapshot ? (
+        <BackendUnreachable onRetry={reload} />
+      ) : null}
+      {stale && snapshot ? (
+        <p role="status" className="rounded-sm border border-elevated/40 bg-elevated/10 px-3 py-2 text-sm text-elevated">
+          {error ?? "Data may be stale — connection unavailable"}
+        </p>
+      ) : null}
 
       <DemoDataNotice>
-        the pending-synchronisation figure is peer ingest on this backend, not a live
-        mesh. Victim, incident, responder, hazard and SOS counts are live. Field
-        devices still do not auto-upload; seed or POST /sync/push for demo data.
+        synchronisation is SIMULATED SYNC (peer ingest), not mesh. KPI counts are live from the
+        coordination backend. Seed with --command-center for the Ahmedabad COP demo.
       </DemoDataNotice>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Tile
-          label="Registered victims"
-          value={board?.total ?? "—"}
-          caption={board ? `${board.open_cases} open · ${board.evacuated} evacuated` : "No uplink"}
-          tone="info"
-        />
-        <Tile
-          label="Critical victims"
-          value={board?.by_triage.critical ?? "—"}
-          caption="Immediate, life threatening"
-          tone="critical"
-        />
-        <Tile
-          label="Active incidents"
-          value={incidents?.by_status.active ?? "—"}
-          caption={incidents ? `${incidents.total} uploaded` : "No uplink"}
-          tone="high"
-        />
-        <Tile
-          label="Active responders"
-          value={responders?.total ?? "—"}
-          caption="Accounts that can hold a field device"
-          tone="nominal"
-        />
-        <Tile
-          label="Active hazards"
-          value={
-            hazards
-              ? hazards.by_status.reported + hazards.by_status.verified
-              : "—"
-          }
-          caption={sos ? `${sos.by_status.created + sos.by_status.acknowledged} open SOS` : "No uplink"}
-          tone="elevated"
-        />
-        <Tile
-          label="Pending synchronisation"
-          value={sync?.pending ?? "—"}
-          caption={
-            sync
-              ? `${sync.conflicts} conflicts recorded · SIMULATED peer ingest`
-              : "No uplink"
-          }
-          tone="info"
-        />
-        {OPERATIONAL_METRICS.map((metric) => (
-          <MetricTile key={metric.key} metric={metric} />
-        ))}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Tile label="Active incidents" value={kpis?.active_incidents ?? "—"} caption="Currently consuming field resources" tone="high" />
+        <Tile label="Critical victims" value={kpis?.critical_victims ?? "—"} caption="Immediate, life threatening" tone="critical" />
+        <Tile label="Active responders" value={kpis?.active_responders ?? "—"} caption="On duty or unreported (not off duty)" tone="nominal" />
+        <Tile label="Active SOS alerts" value={kpis?.active_sos ?? "—"} caption="Created or acknowledged" tone="critical" />
+        <Tile label="Open hazards" value={kpis?.open_hazards ?? "—"} caption="Reported or verified" tone="elevated" />
+        <Tile label="Blocked roads" value={kpis?.blocked_roads ?? "—"} caption="Blocked or partially accessible" tone="high" />
+        <Tile label="Hospital capacity" value={kpis?.hospital_beds_remaining ?? "—"} caption="Beds remaining across hospitals" tone="info" />
+        <Tile label="Pending tasks" value={kpis?.pending_tasks ?? "—"} caption="Not completed or cancelled" tone="elevated" />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+      {snapshot && snapshot.alerts.length > 0 && (
+        <Panel title="Operational alerts" subtitle="Highest-priority COP warnings only">
+          <ul className="divide-y divide-navy-800">
+            {snapshot.alerts.map((alert) => (
+              <li key={alert.code}>
+                <Link
+                  to={alert.href}
+                  className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-navy-800"
+                >
+                  <span>
+                    <StatusPill tone={SEVERITY_TONE[alert.severity] ?? "info"}>{alert.title}</StatusPill>
+                    <span className="ml-2 text-ink-300">{alert.detail}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
+
+      <div className="grid gap-5 xl:grid-cols-[1.3fr_1fr]">
         <Panel
-          title="Capability ledger"
-          subtitle="What this build actually does, and what it does not"
+          title="Active incidents"
+          subtitle="Common operational picture"
+          actions={
+            <Link to="/map" className="text-xs text-accent-400">
+              Open live map
+            </Link>
+          }
         >
           <table className="w-full text-sm">
-            <caption className="sr-only">
-              Implemented and planned platform capabilities by development slice
-            </caption>
             <thead>
               <tr className="border-b border-navy-700 text-left">
-                <th scope="col" className="label-caps px-4 py-2 font-semibold">
-                  Capability
-                </th>
-                <th scope="col" className="label-caps hidden px-4 py-2 font-semibold sm:table-cell">
-                  Detail
-                </th>
-                <th scope="col" className="label-caps px-4 py-2 text-right font-semibold">
-                  State
-                </th>
+                <th className="label-caps px-4 py-2">Incident</th>
+                <th className="label-caps px-4 py-2">Zone</th>
+                <th className="label-caps px-4 py-2">Status</th>
+                <th className="label-caps px-4 py-2">Updated</th>
               </tr>
             </thead>
             <tbody>
+              {(snapshot?.incidents ?? []).map((incident) => (
+                <tr key={incident.id} className="border-b border-navy-800">
+                  <td className="px-4 py-2">
+                    <p className="font-medium text-ink-100">{incident.title}</p>
+                    <p className="font-mono text-xs text-ink-500">{incident.incident_code}</p>
+                  </td>
+                  <td className="px-4 py-2 text-ink-300">{incident.assigned_zone ?? "—"}</td>
+                  <td className="px-4 py-2">
+                    <StatusPill tone={SEVERITY_TONE[incident.status]}>{incident.status}</StatusPill>
+                  </td>
+                  <td className="px-4 py-2 text-ink-400" title={formatTimestamp(incident.updated_at)}>
+                    {formatRelative(incident.updated_at)}
+                  </td>
+                </tr>
+              ))}
+              {!snapshot?.incidents.length && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-sm text-ink-500">
+                    No incidents uploaded to this peer yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </Panel>
+
+        <Panel title="Incident activity" subtitle="From the audit feed on this peer">
+          <ol className="max-h-80 space-y-2 overflow-y-auto px-4 py-3 text-sm">
+            {(snapshot?.activity ?? []).map((event) => (
+              <li key={event.id}>
+                <p className="text-ink-200">{event.summary}</p>
+                <p className="text-xs text-ink-500">
+                  {event.category} · {formatRelative(event.occurred_at)}
+                </p>
+              </li>
+            ))}
+            {!snapshot?.activity.length && <li className="text-ink-500">No activity recorded.</li>}
+          </ol>
+        </Panel>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Panel
+          title="Synchronisation"
+          subtitle="SIMULATED SYNC"
+          actions={
+            <Link to="/sync/conflicts" className="text-xs text-accent-400">
+              Conflict viewer
+            </Link>
+          }
+        >
+          <dl className="grid grid-cols-2 gap-3 px-4 py-3 text-sm">
+            <div>
+              <dt className="label-caps">Pending</dt>
+              <dd className="font-mono text-ink-100">{snapshot?.sync.pending ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="label-caps">Conflicts</dt>
+              <dd className="font-mono text-ink-100">{snapshot?.sync.conflicts ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="label-caps">Devices seen</dt>
+              <dd className="font-mono text-ink-100">{snapshot?.sync.distinct_devices ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="label-caps">Transport</dt>
+              <dd className="text-ink-100">{snapshot?.sync.transport ?? "SIMULATED SYNC"}</dd>
+            </div>
+          </dl>
+        </Panel>
+
+        <Panel title="Capability ledger" subtitle="What this build actually does">
+          <table className="w-full text-sm">
+            <tbody>
               {CAPABILITY_LEDGER.map((row) => (
                 <tr key={row.area} className="border-b border-navy-800 last:border-0">
-                  <td className="px-4 py-2.5 font-medium text-ink-200">{row.area}</td>
-                  <td className="hidden px-4 py-2.5 text-ink-400 sm:table-cell">{row.detail}</td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="px-4 py-2 font-medium text-ink-200">{row.area}</td>
+                  <td className="px-4 py-2 text-right">
                     <StatusPill tone={row.state === "live" ? "nominal" : "inactive"}>
                       {row.state === "live" ? "Implemented" : row.slice}
                     </StatusPill>
@@ -129,40 +179,6 @@ export function DashboardPage() {
               ))}
             </tbody>
           </table>
-        </Panel>
-
-        <Panel title="Architecture invariant" subtitle="The rule every slice must preserve">
-          <div className="space-y-4 p-4">
-            <blockquote className="border-l-2 border-accent-500 pl-3 text-sm leading-relaxed text-ink-200">
-              Field devices must remain operational even when disconnected from the internet.
-            </blockquote>
-
-            <ol className="space-y-1.5 font-mono text-xs text-ink-400">
-              {[
-                "field device",
-                "local database",
-                "local operational state",
-                "peer synchronisation",
-                "conflict resolution",
-                "shared operational state",
-                "digital twin",
-                "decision support",
-                "coordinated response",
-              ].map((stage, index) => (
-                <li key={stage} className="flex gap-2">
-                  <span className="text-ink-500 tabular-nums">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <span className={index < 6 ? "text-nominal" : undefined}>{stage}</span>
-                </li>
-              ))}
-            </ol>
-
-            <p className="border-t border-navy-700 pt-3 text-xs leading-relaxed text-ink-500">
-              Stages shown in green are implemented. This command centre is a synchronisation peer,
-              not a dependency of the field device.
-            </p>
-          </div>
         </Panel>
       </div>
     </div>

@@ -83,7 +83,8 @@ lib/
 │   ├── home/                  responder home
 │   ├── victims/               registration, triage, list, detail   <- Slice 2
 │   ├── profile/               session and device detail
-│   ├── placeholder/           honest stand-ins for unbuilt modules
+│   ├── map/                   local operational plot (OSM when online)
+│   ├── placeholder/           unused honest stand-in widget
 │   └── splash/                session restoration
 └── shared/widgets/            shell, panels, status chips
 ```
@@ -130,8 +131,8 @@ and Slice 3 screenshots (`mobile-home`, `mobile-incidents`, `mobile-sos`,
 - Local audit trail
 - Drift schema v3
 
-Nothing in these flows calls the backend. `/map` still names the slice that
-delivers it.
+Nothing in these flows calls the backend. The Map tab was still a later-slice
+placeholder in this slice.
 
 **Slice 4 — local-first sync (simulated transport)**
 
@@ -141,6 +142,12 @@ delivers it.
 - Pure-Dart `CrdtEngine` (LWW-register, total order)
 - Sync Center + Road R-12 Device A / Device B demo
 - Copy: SIMULATED SYNC, never "mesh"
+
+**Slice 5 — field map**
+
+- Map tab plots incidents, victims, hazards, SOS and last GPS from SQLite
+- OpenStreetMap tiles only while a network is available; not cached offline
+- Not mesh, not a digital twin
 
 ```bash
 flutter test test/crdt_engine_test.dart test/road_r12_sync_test.dart

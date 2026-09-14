@@ -32,34 +32,27 @@ describe("authenticated routing", () => {
     await screen.findByRole("heading", { name: /operational overview/i });
 
     for (const label of [
-      /registered victims/i,
-      /critical victims/i,
-      /active incidents/i,
-      /active responders/i,
-      /active hazards/i,
-      /pending synchronisation/i,
+      /active sos alerts/i,
+      /open hazards/i,
+      /blocked roads/i,
+      /hospital capacity/i,
+      /pending tasks/i,
     ]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
+    expect(screen.getAllByText(/active incidents/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/critical victims/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/active responders/i).length).toBeGreaterThan(0);
   });
 
-  it("reports victim counts from the backend rather than a fixed figure", async () => {
+  it("reports command-centre counts from the snapshot", async () => {
     seedStoredSession();
-    stubSignedInApi(() => ({
-      items: [],
-      board: {
-        total: 12,
-        open_cases: 9,
-        evacuated: 3,
-        by_triage: { critical: 4, urgent: 3, moderate: 2, stable: 3 },
-      },
-      total: 12,
-    }));
+    stubSignedInApi();
 
     renderRoute("/dashboard");
 
-    const caption = await screen.findByText("9 open · 3 evacuated");
-    expect(caption.closest("article")).toHaveTextContent("12");
+    expect(await screen.findAllByText(/ahmedabad earthquake response/i)).not.toHaveLength(0);
+    expect(screen.getByText(/hospital capacity/i).closest("article")).toHaveTextContent("22");
   });
 
   it.each([
@@ -80,17 +73,27 @@ describe("authenticated routing", () => {
   });
 
   it.each([
-    ["/map", /operational map/i, /slice 5/i],
-    ["/resources", /resources/i, /slice 4/i],
-    ["/settings", /settings/i, /slice 4/i],
-  ])("renders %s as an explicit placeholder", async (path, heading, slice) => {
+    ["/map", /operational map/i],
+    ["/resources", /resources/i],
+    ["/hospitals", /hospitals/i],
+  ])("renders %s as a live command-centre page", async (path, heading) => {
     seedStoredSession();
     stubSignedInApi();
 
     renderRoute(path);
 
     expect(await screen.findByRole("heading", { name: heading })).toBeInTheDocument();
-    expect(screen.getByText(slice)).toBeInTheDocument();
+    expect(screen.queryByText(/coming in development slice/i)).not.toBeInTheDocument();
+  });
+
+  it("renders settings as an explicit later-slice placeholder", async () => {
+    seedStoredSession();
+    stubSignedInApi();
+
+    renderRoute("/settings");
+
+    expect(await screen.findByRole("heading", { name: /settings/i })).toBeInTheDocument();
+    expect(screen.getByText(/slice 6/i)).toBeInTheDocument();
   });
 
   it("renders a not-found page for an unknown route", async () => {

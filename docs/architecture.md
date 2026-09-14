@@ -17,13 +17,13 @@ LOCAL DATABASE            ← Slice 1 (implemented)
     ↓
 LOCAL OPERATIONAL STATE   ← Slice 2–3 (implemented: victims, incidents, SOS, hazards, tasks)
     ↓
-PEER SYNCHRONISATION      ← Slice 4 (simulated transport + CRDT; radios are Slice 5)
+PEER SYNCHRONISATION      ← Slice 4 (simulated transport + CRDT; radios are Slice 6)
     ↓
 CONFLICT RESOLUTION       ← Slice 4 (deterministic LWW-register)
     ↓
-SHARED OPERATIONAL STATE  ← Slice 4 (devices converge after exchange)
+SHARED OPERATIONAL STATE  ← Slice 5 command centre COP + map (devices converge after exchange)
     ↓
-DIGITAL TWIN
+DIGITAL TWIN              ← Slice 6 (not started)
     ↓
 DECISION SUPPORT
     ↓
@@ -122,7 +122,9 @@ Bluetooth / Wi-Fi Direct / LoRa / Internet
    SQLite
 ```
 
-Slice 4 supplies a `SimulatedTransport`. Radios are Slice 5.
+Slice 4 supplies a `SimulatedTransport`. Radios are Slice 6. The command centre
+and field maps in Slice 5 draw ingested or locally stored coordinates; they are
+not a digital twin.
 
 **Tombstones:** deletes set `deleted` / `deletedAt` / `deletedBy` on
 `sync_entity_heads`. Rows are not physically removed. Garbage collection is

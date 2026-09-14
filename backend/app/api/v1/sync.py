@@ -19,6 +19,7 @@ from app.models.enums import (
 )
 from app.models.sync_conflict import SyncConflict
 from app.models.sync_operation import SyncOperation
+from app.schemas.sync import SyncConflictRead, SyncOperationPage, SyncOperationRead
 from app.services.sync_crdt import compare_operations
 
 router = APIRouter(prefix="/sync", tags=["Sync"])
@@ -43,24 +44,13 @@ class SyncPushRequest(BaseModel):
 
 class SyncStatusRead(BaseModel):
     pending: int
+    in_flight: int = 0
     acknowledged: int
     failed: int
     conflicts: int
     last_push_at: datetime | None = None
+    transport: str = "SIMULATED SYNC"
     note: str = "Peer ingest only. This is not live mesh networking."
-
-
-class SyncConflictRead(BaseModel):
-    id: uuid.UUID
-    entity_type: SyncEntityType
-    entity_id: str
-    resolution: ConflictResolutionKind
-    winner_operation_id: uuid.UUID
-    loser_operation_id: uuid.UUID
-    reason: str
-    detected_at: datetime
-
-    model_config = {"from_attributes": True}
 
 
 @router.get("/status", response_model=SyncStatusRead)
@@ -74,10 +64,28 @@ def sync_status(session: DbSession, _: CurrentUser) -> SyncStatusRead:
     last = session.scalar(select(func.max(SyncOperation.updated_at)))
     return SyncStatusRead(
         pending=_count(SyncQueueStatus.PENDING),
+        in_flight=_count(SyncQueueStatus.IN_FLIGHT),
         acknowledged=_count(SyncQueueStatus.ACKNOWLEDGED),
         failed=_count(SyncQueueStatus.FAILED),
         conflicts=conflicts,
         last_push_at=last,
+    )
+
+
+@router.get("/operations", response_model=SyncOperationPage)
+def list_operations(session: DbSession, _: CurrentUser, limit: int = 100, offset: int = 0) -> SyncOperationPage:
+    total = session.scalar(select(func.count()).select_from(SyncOperation)) or 0
+    rows = list(
+        session.scalars(
+            select(SyncOperation)
+            .order_by(SyncOperation.logical_timestamp.desc(), SyncOperation.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        ).all()
+    )
+    return SyncOperationPage(
+        items=[SyncOperationRead.model_validate(row) for row in rows],
+        total=total,
     )
 
 

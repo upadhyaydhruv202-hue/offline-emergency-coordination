@@ -25,7 +25,7 @@ export function RespondersPage() {
         <div>
           <h1 className="text-lg font-semibold text-ink-100">Responders</h1>
           <p className="mt-0.5 text-sm text-ink-400">
-            Accounts that can hold a field device. Check-in state stays on the handset until Slice 4.
+            Accounts that can hold a field device. Presence is last ingested check-in.
           </p>
         </div>
         <StatusPill tone="info">Slice 3 — field operations</StatusPill>

@@ -129,7 +129,7 @@ Screenshots: [`mobile-home.png`](screenshots/mobile-home.png),
 
 - Incidents, Responders, Hazards, SOS and Tasks pages
 - Live incident / responder / hazard counts on the dashboard
-- Map remains an honest Slice 5 placeholder
+- Map was still a later-slice placeholder on both clients in this slice
 
 Not in this slice, by design: peer synchronisation, CRDT, mesh, live map,
 automatic SOS transmission.
@@ -172,12 +172,45 @@ conflicts.
 Not in this slice, by design: BLE, Wi-Fi Direct, LoRa, mesh routing,
 store-carry-forward, IBLT, Merkle DAG, PBFT, HLC.
 
-## Slice 5 — Mesh transport
+## Slice 5 — Command centre COP and operational map (complete)
+
+The web command centre is the shared operational picture for Incident
+Commanders. It consumes the same FastAPI peer, the same SQLite/Postgres
+schema, and the Slice 4 sync journal. **Current synchronisation transport is
+simulated for development/demo purposes.** This slice does not implement mesh,
+BLE, LoRa, or a digital twin.
+
+**Backend**
+
+- Alembic `0005_command_center`: `facilities`, `responder_presences`, `audit_events`
+- `GET /api/v1/command/snapshot` — KPI, alerts, markers, activity, sync summary
+- `GET/POST/PATCH /api/v1/facilities` (writes: incident commander / admin)
+- `GET /api/v1/audit/events`
+- `GET /api/v1/sync/operations`
+- `PATCH /api/v1/responders/{id}/presence`
+- Seed: `python -m app.db.seed --command-center`
+
+**Mobile**
+
+- Field map tab plots incidents, victims, hazards, SOS and last GPS from local SQLite
+- OSM tiles load only while a network is available; they are not cached for offline use
+
+**Web**
+
+- Live operational map (Leaflet + OSM tiles) with layer toggles, legend, filters
+- Hospitals, shelters, resource caches, audit feed
+- Dashboard KPIs, alerts, incident panel, SIMULATED SYNC status, stale/offline
+- Conflict viewer remains the Slice 4 page
+
+Not in this slice, by design: mesh radios, cached field tiles, risk layers, AI routing, Edge AI.
+
+## Slice 6 — Mesh transport and digital twin (not started)
 
 - Bluetooth / BLE peer discovery and transfer
 - Wi-Fi Direct for bulk payloads
 - Store-carry-forward across a courier device
 - Multi-hop routing between devices with no infrastructure
+- Historical map states, risk layers, recommended routes
 
 ## Grand Finale candidates
 

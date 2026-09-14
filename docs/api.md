@@ -224,13 +224,17 @@ slice.
 | `GET` | `/api/v1/sync/status` | bearer | Queue counts. Peer ingest, not mesh. |
 | `GET` | `/api/v1/sync/conflicts` | bearer | Recorded conflicts. |
 | `GET` | `/api/v1/sync/demo-scenario` | bearer | Road R-12 development story. |
-| `POST` | `/api/v1/sync/push` | bearer | Idempotent ingest of operations. |
-| `POST` | `/api/v1/sync/pull` | bearer | Operations at or after a logical timestamp. |
+| `GET` | `/api/v1/sync/operations` | bearer | Ingested sync journal. |
+| `GET` | `/api/v1/command/snapshot` | bearer | Common operational picture (KPIs, markers, alerts, activity). |
+| `GET` | `/api/v1/facilities` | bearer | Hospitals, shelters, resource caches. Filter `kind`. |
+| `POST` / `PATCH` | `/api/v1/facilities` | commander/admin | Create or update a facility. |
+| `GET` | `/api/v1/audit/events` | bearer | COP activity feed. |
+| `PATCH` | `/api/v1/responders/{id}/presence` | self or commander | Last known status and position. |
 
 `POST /sync/push` records a conflict when two devices updated the same entity.
 Duplicate `operation_id` values are ignored. Empty payloads are rejected.
 
 ## Not implemented yet
 
-Mesh radios, resources, locations as a PostGIS feed, and the live map.
-They arrive with their slices — see [`slices.md`](./slices.md).
+Mesh radios (BLE / Wi-Fi Direct / LoRa), Digital Twin intelligence, and Edge AI
+are Slice 6. See [`slices.md`](./slices.md).

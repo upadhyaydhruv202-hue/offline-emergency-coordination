@@ -35,6 +35,14 @@ export function TriageBoard({ board }: { board: VictimBoard }) {
             {board.by_triage[COUNT_KEYS[category]]}
           </p>
           <p className="mt-1 text-xs leading-relaxed text-ink-400">{TRIAGE_CAPTION[category]}</p>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-navy-800" aria-hidden>
+            <div
+              className={`h-full ${TRIAGE_BAR[category]}`}
+              style={{
+                width: `${Math.min(100, (board.by_triage[COUNT_KEYS[category]] / Math.max(board.total, 1)) * 100)}%`,
+              }}
+            />
+          </div>
         </article>
       ))}
     </section>

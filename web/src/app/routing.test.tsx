@@ -33,6 +33,9 @@ describe("routing", () => {
     ["/sync/conflicts"],
     ["/map"],
     ["/resources"],
+    ["/hospitals"],
+    ["/shelters"],
+    ["/audit"],
     ["/settings"],
   ])("redirects %s to /login while unauthenticated", async (path) => {
     renderRoute(path);

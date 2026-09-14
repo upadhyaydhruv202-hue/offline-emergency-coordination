@@ -1,6 +1,6 @@
 # Offline-First Disaster Response & Emergency Coordination Platform
 
-**SIH 2026 prototype — Slice 4: Local-first synchronisation**
+**SIH 2026 prototype — Slice 5: Command centre COP + operational map**
 
 > **Field devices must remain operational even when disconnected from the internet.**
 
@@ -74,9 +74,20 @@ Captured with no uplink. The roster is sorted critical-first; the registration
 form leads with triage; the record carries the radio id (`V-CBEC-004`) and the
 UUID that will survive reconciliation.
 
+**Slice 5 — field map**
+
+![Field map](docs/screenshots/mobile-map.png)
+
+The Map tab plots this handset's own SQLite pins (self GPS, incidents, victims,
+hazards, SOS). OpenStreetMap tiles load only while a network exists; they are
+not cached. The capture above is the honest offline plot: navy canvas, local
+pins, street tiles paused.
+
 ## The command centre
 
 ![Command centre dashboard](docs/screenshots/web-dashboard.png)
+
+![Command centre operational map](docs/screenshots/web-map.png)
 
 | Incidents | Responders |
 | --- | --- |
@@ -88,11 +99,12 @@ UUID that will survive reconciliation.
 
 ![Casualty roster](docs/screenshots/web-victims.png)
 
-Victim, incident, responder, hazard, SOS and pending-sync counts on the
-dashboard are live from the coordination backend (sync is peer ingest, not mesh).
-Seed with `python -m app.db.seed --victims --field-ops --sync-demo` for a demo
-picture. Map, resources and settings remain later-slice placeholders — see
-[`docs/screenshots/`](docs/screenshots).
+Victim, incident, responder, hazard, SOS, hospital and pending-sync counts on the
+dashboard are live from the coordination backend (sync is **SIMULATED SYNC** /
+peer ingest, not mesh). Seed with
+`python -m app.db.seed --command-center` for the Ahmedabad COP demo (includes
+`--victims --field-ops --sync-demo` plus hospitals, shelters and Road R-12).
+The Leaflet operational map is live. Settings remain a later-slice placeholder.
 
 ## Architecture
 
@@ -226,6 +238,9 @@ the command centre's Victims page has something to show. They are tagged
 a responder actually registered. It is opt-in because the mobile app does not
 upload yet: without it the page is legitimately empty, and that emptiness is
 the honest state of the system.
+
+`python -m app.db.seed --command-center` also seeds hospitals, shelters, responder
+positions, Road R-12, the COP activity feed, and the Slice 4 sync demo.
 
 ### 4. Web command centre
 
@@ -410,8 +425,7 @@ Drift schema v3. **No step of this calls the backend.**
 `python -m app.db.seed --field-ops`.
 
 **Web** — Incidents, Responders, Hazards, SOS and Tasks pages; live incident,
-responder and hazard counts on the dashboard. The map stays an honest Slice 5
-placeholder.
+responder and hazard counts on the dashboard.
 
 ### Slice 4 — Local-first synchronisation
 
@@ -426,11 +440,23 @@ and Road R-12 Device A / Device B simulator (**SIMULATED SYNC**, not mesh).
 **Web** — Synchronisation dashboard, conflict viewer, live pending/conflict
 counts.
 
+### Slice 5 — Command centre COP and operational map
+
+**Backend** — facilities, responder presence, audit feed; `GET /command/snapshot`;
+writes to facilities restricted to incident commander / admin;
+`python -m app.db.seed --command-center`.
+
+**Mobile** — field Map tab plots local SQLite pins (incidents, victims, hazards,
+SOS, last GPS). OSM tiles load only while a network exists; they are not cached.
+
+**Web** — KPI dashboard, Leaflet operational map with layers and filters,
+hospitals / shelters / resources, activity feed, SIMULATED SYNC integration,
+offline/stale banners. Mesh and Digital Twin remain Slice 6.
+
 ## Deliberately not implemented
 
-Mesh networking, the Digital Twin, AI, live operational maps, routing, hospital
-and resource management, and advanced security (ZKP, DID, WebAuthn, blockchain,
-device trust).
+Mesh networking, the Digital Twin, AI routing, Edge AI, and advanced security
+(ZKP, DID, WebAuthn, blockchain, device trust).
 
 None of the unbuilt modules is faked as working. See [`docs/slices.md`](docs/slices.md).
 
@@ -456,8 +482,8 @@ Two things are worth being explicit about:
 - **Pending synchronisation is peer ingest.** The dashboard tile reads
   `GET /sync/status`. It is not a live mesh count.
 - **The command centre only sees what was pushed or seeded.**
-  `python -m app.db.seed --victims --field-ops --sync-demo` fills the pages for
-  a demo. Empty pages remain the honest state when nothing was ingested.
+  `python -m app.db.seed --command-center` fills the COP for a demo. Empty pages
+  remain the honest state when nothing was ingested.
 - **Vitest uses the `threads` pool.** The default `forks` pool fails to start
   workers when the repository path contains a space.
 

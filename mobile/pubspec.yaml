@@ -31,6 +31,8 @@ dependencies:
   # Calls to the coordination backend when a link exists.
   http: ^1.6.0
   geolocator: ^14.0.3
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
 
 dev_dependencies:
   flutter_test:
